@@ -22,41 +22,96 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
 
     function claimerFor(address earner) external view returns (address) {}
 
-    function cumulativeClaimed(address claimer, IERC20 token) external view returns (uint256) {}
+    function cumulativeClaimed(
+        address claimer,
+        IERC20 token
+    ) external view returns (uint256) {}
 
-    function globalOperatorCommissionBips() external view returns (uint16) {}
+    function defaultOperatorSplitBips() external view returns (uint16) {}
 
-    function operatorCommissionBips(address operator, address avs) external view returns (uint16) {}
+    function calculateEarnerLeafHash(
+        EarnerTreeMerkleLeaf calldata leaf
+    ) external pure returns (bytes32) {}
 
-    function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) external pure returns (bytes32) {}
+    function calculateTokenLeafHash(
+        TokenTreeMerkleLeaf calldata leaf
+    ) external pure returns (bytes32) {}
 
-    function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) external pure returns (bytes32) {}
+    function checkClaim(
+        RewardsMerkleClaim calldata claim
+    ) external view returns (bool) {}
 
-    function checkClaim(RewardsMerkleClaim calldata claim) external view returns (bool) {}
-
-    function currRewardsCalculationEndTimestamp() external view returns (uint32) {}
+    function currRewardsCalculationEndTimestamp()
+        external
+        view
+        returns (uint32)
+    {}
 
     function getDistributionRootsLength() external view returns (uint256) {}
 
-    function getDistributionRootAtIndex(uint256 index) external view returns (DistributionRoot memory) {}
+    function getDistributionRootAtIndex(
+        uint256 index
+    ) external view returns (DistributionRoot memory) {}
 
-    function getCurrentDistributionRoot() external view returns (DistributionRoot memory) {}
+    function getCurrentDistributionRoot()
+        external
+        view
+        returns (DistributionRoot memory)
+    {}
 
-    function getCurrentClaimableDistributionRoot() external view returns (DistributionRoot memory) {}
+    function getCurrentClaimableDistributionRoot()
+        external
+        view
+        returns (DistributionRoot memory)
+    {}
 
-    function getRootIndexFromHash(bytes32 rootHash) external view returns (uint32) {}
+    function getRootIndexFromHash(
+        bytes32 rootHash
+    ) external view returns (uint32) {}
 
     function domainSeparator() external view returns (bytes32) {}
 
-    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions) external {}
+    function getOperatorAVSSplit(
+        address operator,
+        address avs
+    ) external view returns (uint16) {}
 
-    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmission) external {}
+    function getOperatorPISplit(
+        address operator
+    ) external view returns (uint16) {}
 
-    function createRewardsForAllEarners(RewardsSubmission[] calldata rewardsSubmissions) external {}
+    function createAVSRewardsSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external {}
 
-    function processClaim(RewardsMerkleClaim calldata claim, address recipient) external {}
+    function createRewardsForAllSubmission(
+        RewardsSubmission[] calldata rewardsSubmission
+    ) external {}
 
-    function submitRoot(bytes32 root, uint32 rewardsCalculationEndTimestamp) external {}
+    function createRewardsForAllEarners(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external {}
+
+    function createOperatorDirectedAVSRewardsSubmission(
+        address avs,
+        OperatorDirectedRewardsSubmission[]
+            calldata operatorDirectedRewardsSubmissions
+    ) external {}
+
+    function processClaim(
+        RewardsMerkleClaim calldata claim,
+        address recipient
+    ) external {}
+
+    function processClaims(
+        RewardsMerkleClaim[] calldata claims,
+        address recipient
+    ) external {}
+
+    function submitRoot(
+        bytes32 root,
+        uint32 rewardsCalculationEndTimestamp
+    ) external {}
 
     function disableRoot(uint32 rootIndex) external {}
 
@@ -64,10 +119,20 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
 
     function setActivationDelay(uint32 _activationDelay) external {}
 
-    function setGlobalOperatorCommission(uint16 _globalCommissionBips) external {}
+    function setDefaultOperatorSplit(uint16 split) external {}
 
     function setRewardsUpdater(address _rewardsUpdater) external {}
 
-    function setRewardsForAllSubmitter(address _submitter, bool _newValue) external {}
+    function setRewardsForAllSubmitter(
+        address _submitter,
+        bool _newValue
+    ) external {}
 
+    function setOperatorAVSSplit(
+        address operator,
+        address avs,
+        uint16 split
+    ) external {}
+
+    function setOperatorPISplit(address operator, uint16 split) external {}
 }
