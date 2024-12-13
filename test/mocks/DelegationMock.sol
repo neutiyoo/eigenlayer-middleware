@@ -165,14 +165,6 @@ contract DelegationIntermediate is IDelegationManager {
     address staker
   ) external view virtual returns (uint64) {}
 
-  function MIN_WITHDRAWAL_DELAY_BLOCKS()
-    external
-    view
-    virtual
-    override
-    returns (uint32)
-  {}
-
   function getQueuedWithdrawals(
     address staker
   )
@@ -239,6 +231,14 @@ contract DelegationIntermediate is IDelegationManager {
     uint64 prevBeaconChainSlashingFactor,
     uint256 wadSlashed
   ) external virtual {}
+
+    function decreaseDelegatedShares(
+        address staker,
+        uint256 curDepositShares,
+        uint64 beaconChainSlashingFactorDecrease
+    ) external virtual {}
+
+    function minWithdrawalDelayBlocks() external view virtual override returns (uint32) {}
 }
 
 contract DelegationMock is DelegationIntermediate {
@@ -266,7 +266,7 @@ contract DelegationMock is DelegationIntermediate {
         }
         return shares;
     }
-    function minWithdrawalDelayBlocks() external view returns (uint32){
+    function minWithdrawalDelayBlocks() external view override returns (uint32){
         return 100;
     }
 }

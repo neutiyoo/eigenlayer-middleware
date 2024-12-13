@@ -207,9 +207,7 @@ abstract contract ECDSAServiceManagerBase is
             );
         }
 
-        IRewardsCoordinator(rewardsCoordinator).createAVSRewardsSubmission(address(this),
-            rewardsSubmissions
-        );
+        IRewardsCoordinator(rewardsCoordinator).createAVSRewardsSubmission(rewardsSubmissions);
     }
 
     /**

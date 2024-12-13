@@ -63,7 +63,7 @@ contract IndexRegistryUnitTests is MockAVSDeployer, IIndexRegistryEvents {
         initializedQuorumBitmap = uint192(initializedQuorumBitmap.setBit(quorumNumber));
         initializedQuorumBytes = initializedQuorumBitmap.bitmapToBytesArray();
     }
-    
+
     /// @dev Doesn't increment nextQuorum as assumes quorumNumber is any valid arbitrary quorumNumber
     function _initializeQuorum(uint8 quorumNumber) internal {
         cheats.prank(address(registryCoordinator));
@@ -141,7 +141,7 @@ contract IndexRegistryUnitTests is MockAVSDeployer, IIndexRegistryEvents {
     function _randUint(bytes32 rand, uint min, uint max) internal pure returns (uint) {
         // hashing makes for more uniform randomness
         rand = keccak256(abi.encodePacked(rand));
-        
+
         uint range = max - min + 1;
 
         // calculate the number of bits needed for the range
@@ -258,7 +258,7 @@ contract IndexRegistryUnitTests_configAndGetters is IndexRegistryUnitTests {
 
         currBlockNumber += 10;
         cheats.roll(currBlockNumber);
-        
+
         // initialize a new quorum after startBlockNumber
         uint8 quorumNumber = nextQuorum;
         _initializeQuorum();
@@ -268,7 +268,7 @@ contract IndexRegistryUnitTests_configAndGetters is IndexRegistryUnitTests {
         for (uint256 i = 0; i < numOperators; i++) {
             uint256 rand = _randUint({
                 rand: keccak256(abi.encodePacked(bytes32(i), randSalt)),
-                min: 0, 
+                min: 0,
                 max: 1
             });
 
@@ -312,7 +312,7 @@ contract IndexRegistryUnitTests_configAndGetters is IndexRegistryUnitTests {
         for (uint256 i = 0; i < numOperators; i++) {
             uint256 rand = _randUint({
                 rand: keccak256(abi.encodePacked(bytes32(i), randSalt)),
-                min: 0, 
+                min: 0,
                 max: 1
             });
 
@@ -359,7 +359,7 @@ contract IndexRegistryUnitTests_configAndGetters is IndexRegistryUnitTests {
         for (uint256 i = 0; i < numOperators; i++) {
             uint256 rand = _randUint({
                 rand: keccak256(abi.encodePacked(bytes32(i), randSalt)),
-                min: 0, 
+                min: 0,
                 max: 1
             });
 
@@ -418,7 +418,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         bytes memory quorumNumbers = new bytes(defaultQuorumNumber);
 
         cheats.prank(nonRegistryCoordinator);
-        cheats.expectRevert("IndexRegistry.onlyRegistryCoordinator: caller is not the registry coordinator");
+        cheats.expectRevert("IndexRegistry._checkRegistryCoordinator: caller is not the registry coordinator");
         indexRegistry.registerOperator(bytes32(0), quorumNumbers);
     }
 
@@ -465,7 +465,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         // Check _totalOperatorsHistory updates
         _assertQuorumUpdate({
             quorumNumber: defaultQuorumNumber,
-            expectedNumOperators: 1, 
+            expectedNumOperators: 1,
             expectedFromBlockNumber: block.number
         });
         // Check _indexHistory updates
@@ -509,7 +509,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         // Check _totalOperatorsHistory and _indexHistory updates for quorum 1
         _assertQuorumUpdate({
             quorumNumber: defaultQuorumNumber,
-            expectedNumOperators: 1, 
+            expectedNumOperators: 1,
             expectedFromBlockNumber: block.number
         });
         _assertOperatorUpdate({
@@ -523,7 +523,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         // Check _totalOperatorsHistory and _indexHistory updates for quorum 2
         _assertQuorumUpdate({
             quorumNumber: defaultQuorumNumber + 1,
-            expectedNumOperators: 1, 
+            expectedNumOperators: 1,
             expectedFromBlockNumber: block.number
         });
         _assertOperatorUpdate({
@@ -573,7 +573,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
         });
         _assertQuorumUpdate({
             quorumNumber: defaultQuorumNumber,
-            expectedNumOperators: 2, 
+            expectedNumOperators: 2,
             expectedFromBlockNumber: block.number
         });
     }
@@ -619,7 +619,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
             });
             _assertQuorumUpdate({
                 quorumNumber: uint8(quorumNumbers[i]),
-                expectedNumOperators: 1, 
+                expectedNumOperators: 1,
                 expectedFromBlockNumber: block.number
             });
         }
@@ -670,7 +670,7 @@ contract IndexRegistryUnitTests_registerOperator is IndexRegistryUnitTests {
                 });
                 _assertQuorumUpdate({
                     quorumNumber: uint8(quorumNumbers[j]),
-                    expectedNumOperators: i + 1, 
+                    expectedNumOperators: i + 1,
                     expectedFromBlockNumber: block.number
                 });
             }
@@ -699,7 +699,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
         bytes memory quorumNumbers = new bytes(defaultQuorumNumber);
 
         cheats.prank(nonRegistryCoordinator);
-        cheats.expectRevert("IndexRegistry.onlyRegistryCoordinator: caller is not the registry coordinator");
+        cheats.expectRevert("IndexRegistry._checkRegistryCoordinator: caller is not the registry coordinator");
         indexRegistry.deregisterOperator(bytes32(0), quorumNumbers);
     }
 
@@ -761,7 +761,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
         // Check total operators
         _assertQuorumUpdate({
             quorumNumber: defaultQuorumNumber,
-            expectedNumOperators: 0, 
+            expectedNumOperators: 0,
             expectedFromBlockNumber: block.number
         });
     }
@@ -800,7 +800,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
         // Check total operators
         _assertQuorumUpdate({
             quorumNumber: defaultQuorumNumber,
-            expectedNumOperators: 0, 
+            expectedNumOperators: 0,
             expectedFromBlockNumber: block.number
         });
     }
@@ -832,7 +832,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
             // otherwise the popped index operatorId will replace the deregistered operator's index
             uint32 operatorIndex = IndexRegistry(address(indexRegistry)).currentOperatorIndex(quorumNumber, operatorId);
             uint32 quorumCountBefore = indexRegistry.getLatestQuorumUpdate(quorumNumber).numOperators;
-            
+
             assertTrue(operatorIndex <= quorumCountBefore - 1, "operator index should be less than quorumCount");
             bytes32 operatorIdAtBeforeQuorumCount = indexRegistry.getLatestOperatorUpdate({
                 quorumNumber: quorumNumber,
@@ -899,7 +899,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
             // otherwise the popped index operatorId will replace the deregistered operator's index
             uint32 operatorIndex = IndexRegistry(address(indexRegistry)).currentOperatorIndex(quorumNumber, operatorId);
             uint32 quorumCountBefore = indexRegistry.getLatestQuorumUpdate(quorumNumber).numOperators;
-            
+
             assertTrue(operatorIndex <= quorumCountBefore - 1, "operator index should be less than quorumCount");
             bytes32 operatorIdAtBeforeQuorumCount = indexRegistry.getLatestOperatorUpdate({
                 quorumNumber: quorumNumber,
@@ -933,8 +933,8 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
     /**
      * @dev Test deregistering an operator with multiple operators already registered.
      * We deregister the operator with arrayIndex 0 and check that the operator with arrayIndex 2
-     * ends up getting swapped with the deregistering operator. 
-     * 
+     * ends up getting swapped with the deregistering operator.
+     *
      * Also checking QuorumUpdates and OperatorUpdates as well.
      */
     function test_deregisterOperator_MultipleQuorums() public {
@@ -984,7 +984,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
 
             _assertQuorumUpdate({
                 quorumNumber: uint8(quorumsToRemove[i]),
-                expectedNumOperators: 2, 
+                expectedNumOperators: 2,
                 expectedFromBlockNumber: block.number
             });
 
@@ -1012,7 +1012,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
         // mask out quorums that are already initialized
         uint192 bitmap = uint192(bitmapToRegister.minus(uint256(initializedQuorumBitmap)));
         _initializeFuzzedQuorums(bitmap);
-        
+
         bytes memory quorumNumbers = bitmapUtilsWrapper.bitmapToBytesArray(bitmapToRegister);
         bytes memory quorumsToRemove = bitmapUtilsWrapper.bitmapToBytesArray(bitmapToDeregister);
 
@@ -1028,7 +1028,7 @@ contract IndexRegistryUnitTests_deregisterOperator is IndexRegistryUnitTests {
             // Check total operators for removed quorums
             _assertQuorumUpdate({
                 quorumNumber: uint8(quorumsToRemove[i]),
-                expectedNumOperators: 1, 
+                expectedNumOperators: 1,
                 expectedFromBlockNumber: block.number
             });
             // Check swapped operator's index for removed quorums
