@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import {IServiceManager} from "./IServiceManager.sol";
 import {IBLSApkRegistry} from "./IBLSApkRegistry.sol";
@@ -7,11 +7,35 @@ import {IStakeRegistry} from "./IStakeRegistry.sol";
 import {IIndexRegistry} from "./IIndexRegistry.sol";
 import {BN254} from "../libraries/BN254.sol";
 
+interface IRegistryCoordinatorErrors {
+    error InputLengthMismatch();
+    error OperatorSetsEnabled();
+    error OperatorSetsNotEnabled();
+    error OperatorSetsNotSupported();
+    error OnlyAllocationManager();
+    error OnlyEjector();
+    error QuorumDoesNotExist();
+    error BitmapEmpty();
+    error AlreadyRegisteredForQuorums();
+    error CannotReregisterYet();
+    error NotRegistered();
+    error CannotChurnSelf();
+    error QuorumOperatorCountMismatch();
+    error InsufficientStakeForChurn();
+    error CannotKickOperatorAboveThreshold();
+    error BitmapCannotBeZero();
+    error NotRegisteredForQuorum();
+    error MaxQuorumsReached();
+    error SaltAlreadyUsed();
+    error RegistryCoordinatorSignatureExpired();
+    error ChurnApproverSaltUsed();
+    error NotSorted();
+}
 /**
  * @title Interface for a contract that coordinates between various registries for an AVS.
  * @author Layr Labs, Inc.
  */
-interface IRegistryCoordinator {
+interface IRegistryCoordinator is IRegistryCoordinatorErrors{
     // EVENTS
 
     /// Emits when an operator is registered
@@ -139,6 +163,15 @@ interface IRegistryCoordinator {
 
     /// @notice Returns the number of registries
     function numRegistries() external view returns (uint256);
+
+    /// @notice Returns whether a quorum is an M2 quorum
+    /// @param quorumNumber The quorum number to check
+    /// @return True if the quorum is an M2 quorum
+    function isM2Quorum(uint8 quorumNumber) external view returns (bool);
+
+    /// @notice Returns whether the AVS is an operator set AVS
+    /// @return True if the AVS is an operator set AVS
+    function isOperatorSetAVS() external view returns (bool);
 
     /**
      * @notice Returns the message hash that an operator must sign to register their BLS public key.

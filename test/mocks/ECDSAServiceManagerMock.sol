@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../../src/unaudited/ECDSAServiceManagerBase.sol";
 import {IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
@@ -28,7 +28,11 @@ contract ECDSAServiceManagerMock is ECDSAServiceManagerBase {
         __ServiceManagerBase_init(initialOwner, rewardsInitiator);
     }
 
-    function createOperatorSets(uint32[] memory) external {}
+    function createOperatorSets(IAllocationManager.CreateSetParams[] memory params) external{}
+
+    function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external{}
+
+    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external{}
 
     function registerOperatorToOperatorSets(
         address operator,
