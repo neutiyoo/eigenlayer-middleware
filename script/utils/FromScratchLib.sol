@@ -41,6 +41,7 @@ library DeploymentLib {
         address socketRegistry;
         address strategy;
         address token;
+        address pauserRegistry;
     }
 
     struct ConfigData {
@@ -51,54 +52,56 @@ library DeploymentLib {
     }
 
     function deployContracts(
+        CoreDeploymentLib.DeploymentData memory core,
         ConfigData memory config
     ) internal returns (DeploymentData memory) {
-        /// read EL deployment address
-        CoreDeploymentLib.DeploymentData memory core =
-            CoreDeploymentLib.readCoreDeploymentJson("script/deployments/core/", block.chainid);
-
         DeploymentData memory result;
-        // First, deploy upgradeable proxy contracts that will point to the implementations.
+        address[] memory pausers = new address[](2);
+        pausers[0] = config.admin;
+        pausers[1] = config.admin;
+        PauserRegistry pausercontract = new PauserRegistry(pausers, config.admin);
+        result.pauserRegistry = address(pausercontract);
         result.stakeRegistry = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
         result.registryCoordinator = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
         result.blsapkRegistry = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
         result.indexRegistry = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
         result.socketRegistry = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
         OperatorStateRetriever operatorStateRetriever = new OperatorStateRetriever();
-        /// TODO: Create strategy
-        // result.strategy = strategy;
         result.operatorStateRetriever = address(operatorStateRetriever);
-        // Deploy the implementation contracts, using the proxy contracts as inputs
+
+        upgradeContracts(result, config, core);
+
+        return result;
+    }
+
+    function upgradeContracts(
+        DeploymentData memory deployment,
+        ConfigData memory config,
+        CoreDeploymentLib.DeploymentData memory core
+    ) internal {
         address stakeRegistryImpl = address(
             new StakeRegistry(
-                IRegistryCoordinator(result.registryCoordinator),
+                IRegistryCoordinator(deployment.registryCoordinator),
                 IDelegationManager(core.delegationManager),
                 IAVSDirectory(core.avsDirectory),
-                IServiceManager(result.serviceManager)
+                IServiceManager(deployment.serviceManager)
             )
         );
 
-        address[] memory pausers = new address[](2);
-        pausers[0] = config.admin;
-        pausers[1] = config.admin;
-        PauserRegistry pausercontract = new PauserRegistry(pausers, config.admin);
-
-        address blsApkRegistryImpl = address(new BLSApkRegistry(IRegistryCoordinator(result.registryCoordinator)));
-        address indexRegistryimpl = address(new IndexRegistry(IRegistryCoordinator(result.registryCoordinator)));
+        address blsApkRegistryImpl = address(new BLSApkRegistry(IRegistryCoordinator(deployment.registryCoordinator)));
+        address indexRegistryimpl = address(new IndexRegistry(IRegistryCoordinator(deployment.registryCoordinator)));
         address registryCoordinatorImpl = address(
             new RegistryCoordinator(
-                IServiceManager(result.serviceManager),
-                IStakeRegistry(result.stakeRegistry),
-                IBLSApkRegistry(result.blsapkRegistry),
-                IIndexRegistry(result.indexRegistry),
+                IServiceManager(deployment.serviceManager),
+                IStakeRegistry(deployment.stakeRegistry),
+                IBLSApkRegistry(deployment.blsapkRegistry),
+                IIndexRegistry(deployment.indexRegistry),
                 IAVSDirectory(core.avsDirectory),
-                IPauserRegistry(pausercontract)
+                IPauserRegistry(deployment.pauserRegistry)
             )
         );
 
-
-
-        IStrategy[1] memory deployedStrategyArray = [IStrategy(result.strategy)];
+        IStrategy[1] memory deployedStrategyArray = [IStrategy(deployment.strategy)];
         uint256 numStrategies = deployedStrategyArray.length;
 
         uint256 numQuorums = config.numQuorums;
@@ -113,7 +116,7 @@ library DeploymentLib {
                 kickBIPsOfTotalStake: uint16(operator_params[i + 2])
             });
         }
-        // set to 0 for every quorum
+
         uint96[] memory quorumsMinimumStake = new uint96[](numQuorums);
         IStakeRegistry.StrategyParams[][] memory quorumsStrategyParams =
             new IStakeRegistry.StrategyParams[][](numQuorums);
@@ -122,10 +125,6 @@ library DeploymentLib {
             for (uint256 j = 0; j < numStrategies; j++) {
                 quorumsStrategyParams[i][j] = IStakeRegistry.StrategyParams({
                     strategy: deployedStrategyArray[j],
-                    // setting this to 1 ether since the divisor is also 1 ether
-                    // therefore this allows an operator to register with even just 1 token
-                    // see https://github.com/Layr-Labs/eigenlayer-middleware/blob/m2-mainnet/src/StakeRegistry.sol#L484
-                    //    weight += uint96(sharesAmount * strategyAndMultiplier.multiplier / WEIGHTING_DIVISOR);
                     multiplier: 1 ether
                 });
             }
@@ -146,12 +145,10 @@ library DeploymentLib {
             )
         );
 
-        UpgradeableProxyLib.upgrade(result.stakeRegistry, stakeRegistryImpl);
-        UpgradeableProxyLib.upgrade(result.blsapkRegistry, blsApkRegistryImpl);
-        UpgradeableProxyLib.upgrade(result.indexRegistry, indexRegistryimpl);
-        UpgradeableProxyLib.upgradeAndCall(result.registryCoordinator, registryCoordinatorImpl, upgradeCall);
-
-        return result;
+        UpgradeableProxyLib.upgrade(deployment.stakeRegistry, stakeRegistryImpl);
+        UpgradeableProxyLib.upgrade(deployment.blsapkRegistry, blsApkRegistryImpl);
+        UpgradeableProxyLib.upgrade(deployment.indexRegistry, indexRegistryimpl);
+        UpgradeableProxyLib.upgradeAndCall(deployment.registryCoordinator, registryCoordinatorImpl, upgradeCall);
     }
 
 }
