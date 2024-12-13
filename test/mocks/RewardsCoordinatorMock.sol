@@ -17,7 +17,6 @@ contract RewardsCoordinatorMock is IRewardsCoordinator {
   ) external override {}
 
   function createAVSRewardsSubmission(
-    address avs,
     RewardsSubmission[] calldata rewardsSubmissions
   ) external override {}
 

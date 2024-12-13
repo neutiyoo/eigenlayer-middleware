@@ -194,7 +194,7 @@ contract BLSSignatureChecker is IBLSSignatureChecker {
         {
             bool _staleStakesForbidden = staleStakesForbidden;
             uint256 withdrawalDelayBlocks = _staleStakesForbidden
-                ? delegation.MIN_WITHDRAWAL_DELAY_BLOCKS()
+                ? delegation.minWithdrawalDelayBlocks()
                 : 0;
 
             for (uint256 i = 0; i < quorumNumbers.length; i++) {
