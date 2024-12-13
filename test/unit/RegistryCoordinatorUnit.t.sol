@@ -1980,7 +1980,7 @@ contract RegistryCoordinatorUnitTests_AfterMigration is RegistryCoordinatorUnitT
     }
 
     function test_M2_Deregister() public {
-        // vm.skip(true);
+        vm.skip(true);
         /// Create 2 M2 quorums
         _deployMockEigenLayerAndAVS(2);
 

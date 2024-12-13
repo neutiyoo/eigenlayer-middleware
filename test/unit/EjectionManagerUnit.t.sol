@@ -366,7 +366,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
 
     function test_Revert_NotPermissioned() public {
         bytes32[][] memory operatorIds;
-        cheats.expectRevert("Ejector: Only owner or ejector can eject");
+        cheats.expectRevert("EjectionManager.ejectOperators: Only owner or ejector can eject");
         ejectionManager.ejectOperators(operatorIds);
 
         EjectionManager.QuorumEjectionParams memory _quorumEjectionParams;

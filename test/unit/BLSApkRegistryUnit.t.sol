@@ -310,7 +310,7 @@ contract BLSApkRegistryUnitTests_configAndGetters is BLSApkRegistryUnitTests {
 
         cheats.prank(address(nonCoordinatorAddress));
         cheats.expectRevert(
-            "BLSApkRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"
+            "BLSApkRegistry._checkRegistryCoordinator: caller is not the registry coordinator"
         );
         blsApkRegistry.initializeQuorum(defaultQuorumNumber);
     }
@@ -335,7 +335,7 @@ contract BLSApkRegistryUnitTests_registerBLSPublicKey is
 
         cheats.prank(address(nonCoordinatorAddress));
         cheats.expectRevert(
-            "BLSApkRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"
+            "BLSApkRegistry._checkRegistryCoordinator: caller is not the registry coordinator"
         );
         blsApkRegistry.registerBLSPublicKey(
             defaultOperator,
@@ -545,7 +545,7 @@ contract BLSApkRegistryUnitTests_registerOperator is BLSApkRegistryUnitTests {
 
         cheats.prank(nonCoordinatorAddress);
         cheats.expectRevert(
-            "BLSApkRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"
+            "BLSApkRegistry._checkRegistryCoordinator: caller is not the registry coordinator"
         );
         blsApkRegistry.registerOperator(nonCoordinatorAddress, new bytes(0));
     }
@@ -673,7 +673,7 @@ contract BLSApkRegistryUnitTests_deregisterOperator is BLSApkRegistryUnitTests {
 
         cheats.prank(nonCoordinatorAddress);
         cheats.expectRevert(
-            "BLSApkRegistry.onlyRegistryCoordinator: caller is not the registry coordinator"
+            "BLSApkRegistry._checkRegistryCoordinator: caller is not the registry coordinator"
         );
         blsApkRegistry.deregisterOperator(nonCoordinatorAddress, new bytes(0));
     }
@@ -1081,7 +1081,7 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
         if (wrongBlockNumber < startingBlockNumber + indexToCheck * 100) {
             emit log_named_uint("index too recent: ", indexToCheck);
             cheats.expectRevert(
-                "BLSApkRegistry._validateApkHashAtBlockNumber: index too recent"
+                "BLSApkRegistry.getApkHashAtBlockNumberAndIndex: index too recent"
             );
             blsApkRegistry.getApkHashAtBlockNumberAndIndex(
                 defaultQuorumNumber,
@@ -1094,7 +1094,7 @@ contract BLSApkRegistryUnitTests_quorumApkUpdates is BLSApkRegistryUnitTests {
         ) {
             emit log_named_uint("index not latest: ", indexToCheck);
             cheats.expectRevert(
-                "BLSApkRegistry._validateApkHashAtBlockNumber: not latest apk update"
+                "BLSApkRegistry.getApkHashAtBlockNumberAndIndex: not latest apk update"
             );
             blsApkRegistry.getApkHashAtBlockNumberAndIndex(
                 defaultQuorumNumber,
