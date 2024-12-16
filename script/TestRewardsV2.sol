@@ -62,4 +62,21 @@ contract TestRewardsV2 is Script {
 
         eigenDAServiceManager.createAVSRewardsSubmission(rewardsSubmissions);
     }
+
+    function tx_2() public {
+        IRewardsCoordinator.RewardsSubmission[]
+            memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+                1
+            );
+
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: WETH,
+            amount: 1e18,
+            startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
+            duration: uint32(518400) // 6 days
+        });
+
+        eigenDAServiceManager.createAVSRewardsSubmission(rewardsSubmissions);
+    }
 }
