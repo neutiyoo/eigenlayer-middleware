@@ -2,51 +2,58 @@
 pragma solidity ^0.8.0;
 // Deploy L2AVS proxy
 
-import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import {CoreDeploymentLib} from "./CoreDeploymentLib.sol";
+import {MiddlewareDeploymentLib} from "./MiddlewareDeploymentLib.sol";
 
-import {Vm} from "forge-std/Vm.sol";
-import {stdJson} from "forge-std/StdJson.sol";
-
-library OperatorSetUpgradeLib {
-    using stdJson for string;
-
-    // address(uint160(uint256(keccak256("hevm cheat code")))) == 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D
-    // solhint-disable-next-line const-name-snakecase
-    Vm private constant vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
-
-    /**
-     * @dev Storage slot with the address of the current implementation.
-     * This is the keccak-256 hash of "eip1967.proxy.implementation" subtracted by 1.
-     */
-    bytes32 internal constant IMPLEMENTATION_SLOT =
-        0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
-
-    /**
-     * @dev Storage slot with the admin of the contract.
-     * This is the keccak-256 hash of "eip1967.proxy.admin" subtracted by 1.
-     */
-    bytes32 internal constant ADMIN_SLOT =
-     0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+import {StakeRegistry} from "../../src/StakeRegistry.sol";
+import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
+import {IndexRegistry} from "../../src/IndexRegistry.sol";
+import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
+import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
+import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
+import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
+import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
+import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
+import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 
 
-    function upgrade(address proxy, address implementation, bytes memory data) internal {
-        ProxyAdmin admin = ProxyAdmin(getAdmin(proxy));
-        admin.upgradeAndCall(TransparentUpgradeableProxy(payable(proxy)), implementation, data);
+library SlashingUpgradeLib {
+    using CoreDeploymentLib for string;
+
+    function parseCoreDeploymentJson(string memory path, uint256 chainId) internal returns (CoreDeploymentLib.DeploymentData memory) {
+        return CoreDeploymentLib.readCoreDeploymentJson(path, chainId);
     }
 
-    function upgrade(address proxy, address implementation) internal {
-        ProxyAdmin admin = ProxyAdmin(getAdmin(proxy));
-        admin.upgrade(TransparentUpgradeableProxy(payable(proxy)), implementation);
+    function parseCoreDeploymentJson(string memory path, uint256 chainId, string memory environment) internal returns (CoreDeploymentLib.DeploymentData memory) {
+        return CoreDeploymentLib.readCoreDeploymentJson(path, chainId, environment);
     }
 
-    function getAdmin(address proxy) internal view returns (address) {
-        bytes32 value = vm.load(proxy, ADMIN_SLOT);
-        return address(uint160(uint256(value)));
-    }
+    function deployNewImplementations(
+        CoreDeploymentLib.DeploymentData memory core,
+        MiddlewareDeploymentLib.DeploymentData memory deployment
+    ) internal {
+        address stakeRegistryImpl = address(
+            new StakeRegistry(
+                IRegistryCoordinator(deployment.registryCoordinator),
+                IDelegationManager(core.delegationManager),
+                IAVSDirectory(core.avsDirectory),
+                IServiceManager(deployment.serviceManager)
+            )
+        );
 
-    function getImplementation(address proxy) internal view returns (address) {
-        bytes32 value = vm.load(proxy, IMPLEMENTATION_SLOT);
-        return address(uint160(uint256(value)));
+        address blsApkRegistryImpl = address(new BLSApkRegistry(IRegistryCoordinator(deployment.registryCoordinator)));
+        address indexRegistryImpl = address(new IndexRegistry(IRegistryCoordinator(deployment.registryCoordinator)));
+        address registryCoordinatorImpl = address(
+            new RegistryCoordinator(
+                IServiceManager(deployment.serviceManager),
+                IStakeRegistry(deployment.stakeRegistry),
+                IBLSApkRegistry(deployment.blsapkRegistry),
+                IIndexRegistry(deployment.indexRegistry),
+                IAVSDirectory(core.avsDirectory),
+                IPauserRegistry(deployment.pauserRegistry)
+            )
+        );
     }
 }

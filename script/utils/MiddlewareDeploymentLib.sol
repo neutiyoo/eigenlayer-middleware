@@ -24,7 +24,7 @@ import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy
 import {PauserRegistry, IPauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
 
-library DeploymentLib {
+library MiddlewareDeploymentLib {
     using stdJson for *;
     using Strings for *;
     using UpgradeableProxyLib for address;

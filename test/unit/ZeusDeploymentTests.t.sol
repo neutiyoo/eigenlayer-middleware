@@ -8,7 +8,7 @@ contract ZeusDeploymentTests is Test {
     using CoreDeploymentLib for string;
 
     function testParseZeusJson() public {
-        string memory path = "script/deployments";
+        string memory path = "script/config";
         uint256 chainId = 17000;
         string memory environment = "preprod";
 
