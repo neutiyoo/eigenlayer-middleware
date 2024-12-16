@@ -45,7 +45,9 @@ contract TestRewardsV2 is Script {
                 multiplier: 1e18
             });
 
-        defaultStrategyAndMultipliers = _sortStrategyArrayAsc(defaultStrategyAndMultipliers);
+        defaultStrategyAndMultipliers = _sortStrategyArrayAsc(
+            defaultStrategyAndMultipliers
+        );
     }
 
     function _sortStrategyArrayAsc(
@@ -64,8 +66,7 @@ contract TestRewardsV2 is Script {
         return arr;
     }
 
-
-     /// @dev Sort to ensure that the array is in ascending order for addresses
+    /// @dev Sort to ensure that the array is in ascending order for addresses
     function _sortAddressArrayAsc(
         address[] memory arr
     ) internal pure returns (address[] memory) {
@@ -161,7 +162,7 @@ contract TestRewardsV2 is Script {
     }
 
     function tx_6() public {
-       _setupStrategyAndMultiplier();
+        _setupStrategyAndMultiplier();
 
         IRewardsCoordinator.OperatorReward[]
             memory operatorRewards = new IRewardsCoordinator.OperatorReward[](
@@ -186,7 +187,7 @@ contract TestRewardsV2 is Script {
                 token: WETH,
                 operatorRewards: operatorRewards,
                 startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
-                duration: uint32(518400) // 6 days
+                duration: uint32(518400), // 6 days
                 description: ""
             });
 
