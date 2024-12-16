@@ -2,12 +2,12 @@
 pragma solidity ^0.8.12;
 
 import {Vm} from "forge-std/Vm.sol";
+import {console2 as console} from "forge-std/Test.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {UpgradeableProxyLib} from "./UpgradeableProxyLib.sol";
-import {CoreDeploymentLib} from "./CoreDeploymentLib.sol";
+import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
 import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
@@ -20,9 +20,26 @@ import {IStakeRegistry, StakeType} from "../../src/interfaces/IStakeRegistry.sol
 import {IRegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
+import {IStrategyFactory} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyFactory.sol";
+import {ServiceManagerMock} from "../../test/mocks/ServiceManagerMock.sol";
+
 
 import {PauserRegistry, IPauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
+
+import {UpgradeableProxyLib} from "./UpgradeableProxyLib.sol";
+import {CoreDeploymentLib} from "./CoreDeploymentLib.sol";
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+contract ERC20Mock is ERC20 {
+    constructor() ERC20("", "") {}
+
+    function mint(address account, uint256 amount) public {
+        _mint(account, amount);
+    }
+}
 
 library MiddlewareDeploymentLib {
     using stdJson for *;
@@ -38,7 +55,6 @@ library MiddlewareDeploymentLib {
         address blsapkRegistry;
         address indexRegistry;
         address stakeRegistry;
-        address socketRegistry;
         address strategy;
         address token;
         address pauserRegistry;
@@ -65,11 +81,18 @@ library MiddlewareDeploymentLib {
         result.registryCoordinator = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
         result.blsapkRegistry = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
         result.indexRegistry = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
-        result.socketRegistry = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
+        result.serviceManager = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
         OperatorStateRetriever operatorStateRetriever = new OperatorStateRetriever();
         result.operatorStateRetriever = address(operatorStateRetriever);
 
-        upgradeContracts(result, config, core);
+        ERC20Mock token = new ERC20Mock();
+        result.token = address(token);
+
+        // Create a new strategy using the strategy factory
+        IStrategyFactory strategyFactory = IStrategyFactory(core.strategyFactory);
+        IStrategy strategy = strategyFactory.deployNewStrategy(IERC20(result.token));
+        result.strategy = address(strategy);
+        result.token = address(token);
 
         return result;
     }
@@ -79,6 +102,16 @@ library MiddlewareDeploymentLib {
         ConfigData memory config,
         CoreDeploymentLib.DeploymentData memory core
     ) internal {
+
+        address serviceManagerImpl = address(
+            new ServiceManagerMock(
+                IAVSDirectory(core.avsDirectory),
+                IRewardsCoordinator(core.rewardsCoordinator),
+                IRegistryCoordinator(deployment.registryCoordinator),
+                IStakeRegistry(deployment.stakeRegistry),
+                IAllocationManager(core.allocationManager)
+            )
+        );
         address stakeRegistryImpl = address(
             new StakeRegistry(
                 IRegistryCoordinator(deployment.registryCoordinator),
@@ -130,7 +163,7 @@ library MiddlewareDeploymentLib {
             }
         }
 
-        bytes memory upgradeCall = abi.encodeCall(
+        bytes memory registryCoordinatorUpgradeCall = abi.encodeCall(
             RegistryCoordinator.initialize,
             (
                 config.admin,
@@ -140,15 +173,25 @@ library MiddlewareDeploymentLib {
                 quorumsOperatorSetParams,
                 quorumsMinimumStake,
                 quorumsStrategyParams,
-                new StakeType[](0),
-                new uint32[](0)
+                new StakeType[](1),
+                new uint32[](1)
             )
         );
 
+        bytes memory serviceManagerUpgradeCall = abi.encodeCall(
+            ServiceManagerMock.initialize,
+            (
+                config.admin,
+                config.admin,
+                config.admin
+            )
+        );
+
+        UpgradeableProxyLib.upgradeAndCall(deployment.serviceManager, serviceManagerImpl, serviceManagerUpgradeCall);
         UpgradeableProxyLib.upgrade(deployment.stakeRegistry, stakeRegistryImpl);
         UpgradeableProxyLib.upgrade(deployment.blsapkRegistry, blsApkRegistryImpl);
         UpgradeableProxyLib.upgrade(deployment.indexRegistry, indexRegistryimpl);
-        UpgradeableProxyLib.upgradeAndCall(deployment.registryCoordinator, registryCoordinatorImpl, upgradeCall);
+        UpgradeableProxyLib.upgradeAndCall(deployment.registryCoordinator, registryCoordinatorImpl, registryCoordinatorUpgradeCall);
     }
 
 }

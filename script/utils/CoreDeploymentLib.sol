@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.12;
 
@@ -41,8 +40,6 @@ import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPa
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {StrategyFactory} from "eigenlayer-contracts/src/contracts/strategies/StrategyFactory.sol";
 
-
-
 library CoreDeploymentLib {
     using stdJson for string;
 
@@ -51,6 +48,7 @@ library CoreDeploymentLib {
     struct AVSDirectoryConfig {
         uint256 initialPausedStatus;
     }
+
     struct StrategyManagerConfig {
         uint256 initPausedStatus;
         uint256 initWithdrawalDelayBlocks;
@@ -68,6 +66,7 @@ library CoreDeploymentLib {
 
     struct EigenPodManagerConfig {
         uint256 initPausedStatus;
+        uint64 genesisTime;
     }
 
     struct RewardsCoordinatorConfig {
@@ -115,7 +114,7 @@ library CoreDeploymentLib {
         address permissionController;
     }
 
-    function deployCore(
+    function deployCoreFromScratch(
         address proxyAdmin,
         DeploymentConfig memory config
     ) internal returns (DeploymentData memory) {
@@ -176,12 +175,6 @@ library CoreDeploymentLib {
             )
         );
 
-        /// TODO: Get actual values
-        uint32 CALCULATION_INTERVAL_SECONDS = 1 days;
-        uint32 MAX_REWARDS_DURATION = 1 days;
-        uint32 MAX_RETROACTIVE_LENGTH = 1;
-        uint32 MAX_FUTURE_LENGTH = 1;
-        uint32 GENESIS_REWARDS_TIMESTAMP = 10 days;
         address rewardsCoordinatorImpl = address(
             new RewardsCoordinator(
                 IDelegationManager(result.delegationManager),
@@ -189,22 +182,19 @@ library CoreDeploymentLib {
                 IAllocationManager(result.allocationManager),
                 IPauserRegistry(result.pauserRegistry),
                 IPermissionController(result.permissionController),
-                CALCULATION_INTERVAL_SECONDS,
-                MAX_REWARDS_DURATION,
-                MAX_RETROACTIVE_LENGTH,
-                MAX_FUTURE_LENGTH,
-                GENESIS_REWARDS_TIMESTAMP
+                uint32(config.rewardsCoordinator.calculationIntervalSeconds),
+                uint32(config.rewardsCoordinator.maxRewardsDuration),
+                uint32(config.rewardsCoordinator.maxRetroactiveLength),
+                uint32(config.rewardsCoordinator.maxFutureLength),
+                uint32(config.rewardsCoordinator.genesisRewardsTimestamp)
             )
         );
-
-        /// TODO: Get actual genesis time
-        uint64 GENESIS_TIME = 1_564_000;
 
         address eigenPodImpl = address(
             new EigenPod(
                 IETHPOSDeposit(ethPOSDeposit),
                 IEigenPodManager(result.eigenPodManager),
-                GENESIS_TIME
+                config.eigenPodManager.genesisTime
             )
         );
         address eigenPodBeaconImpl = address(new UpgradeableBeacon(eigenPodImpl));
