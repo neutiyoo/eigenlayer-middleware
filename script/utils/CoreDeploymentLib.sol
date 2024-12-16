@@ -3,8 +3,11 @@
 pragma solidity ^0.8.12;
 
 import {Vm} from "forge-std/Vm.sol";
+import {stdJson} from "forge-std/StdJson.sol";
 
 library CoreDeploymentLib {
+    using stdJson for string;
+
     Vm internal constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     struct StrategyManagerConfig {
@@ -54,8 +57,31 @@ library CoreDeploymentLib {
         address strategyBeacon;
     }
 
-    function readCoreDeploymentJson(string memory path, uint256 chainId) internal pure returns (CoreDeploymentLib.DeploymentData memory) {
-        /// TODO: implement logic based on hw
+    function readCoreDeploymentJson(string memory path, uint256 chainId) internal view returns (CoreDeploymentLib.DeploymentData memory) {
+        string memory filePath = string(abi.encodePacked(path, "/", chainId, ".json"));
+        return parseCoreJson(filePath);
     }
 
+    function readCoreDeploymentJson(string memory path, uint256 chainId, string memory environment) internal view returns (CoreDeploymentLib.DeploymentData memory) {
+        string memory filePath = string(abi.encodePacked(path, "/", chainId, "-", environment, ".json"));
+        return parseCoreJson(filePath);
+    }
+
+    function parseCoreJson(string memory filePath) internal view returns (CoreDeploymentLib.DeploymentData memory) {
+        string memory json = vm.readFile(filePath);
+        CoreDeploymentLib.DeploymentData memory deploymentData;
+
+        deploymentData.delegationManager = json.readAddress(".ZEUS_DEPLOYED_DelegationManager_Proxy");
+        deploymentData.avsDirectory = json.readAddress(".ZEUS_DEPLOYED_AVSDirectory_Proxy");
+        deploymentData.allocationManager = json.readAddress(".ZEUS_DEPLOYED_AllocationManager_Proxy");
+        deploymentData.strategyManager = json.readAddress(".ZEUS_DEPLOYED_StrategyManager_Proxy");
+        deploymentData.eigenPodManager = json.readAddress(".ZEUS_DEPLOYED_EigenPodManager_Proxy");
+        deploymentData.rewardsCoordinator = json.readAddress(".ZEUS_DEPLOYED_RewardsCoordinator_Proxy");
+        deploymentData.eigenPodBeacon = json.readAddress(".ZEUS_DEPLOYED_EigenPod_Beacon");
+        deploymentData.pauserRegistry = json.readAddress(".ZEUS_DEPLOYED_PauserRegistry_Impl");
+        deploymentData.strategyFactory = json.readAddress(".ZEUS_DEPLOYED_StrategyFactory_Proxy");
+        deploymentData.strategyBeacon = json.readAddress(".ZEUS_DEPLOYED_StrategyBase_Beacon");
+
+        return deploymentData;
+    }
 }
