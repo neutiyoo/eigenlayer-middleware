@@ -44,6 +44,42 @@ contract TestRewardsV2 is Script {
                 strategy: STRATEGY_STETH,
                 multiplier: 1e18
             });
+
+        defaultStrategyAndMultipliers = _sortStrategyArrayAsc(defaultStrategyAndMultipliers);
+    }
+
+    function _sortStrategyArrayAsc(
+        IStrategy[] memory arr
+    ) internal pure returns (IStrategy[] memory) {
+        uint256 l = arr.length;
+        for (uint256 i = 0; i < l; i++) {
+            for (uint256 j = i + 1; j < l; j++) {
+                if (address(arr[i]) > address(arr[j])) {
+                    IStrategy temp = arr[i];
+                    arr[i] = arr[j];
+                    arr[j] = temp;
+                }
+            }
+        }
+        return arr;
+    }
+
+
+     /// @dev Sort to ensure that the array is in ascending order for addresses
+    function _sortAddressArrayAsc(
+        address[] memory arr
+    ) internal pure returns (address[] memory) {
+        uint256 l = arr.length;
+        for (uint256 i = 0; i < l; i++) {
+            for (uint256 j = i + 1; j < l; j++) {
+                if (arr[i] > arr[j]) {
+                    address temp = arr[i];
+                    arr[i] = arr[j];
+                    arr[j] = temp;
+                }
+            }
+        }
+        return arr;
     }
 
     function tx_1() public {
@@ -103,6 +139,8 @@ contract TestRewardsV2 is Script {
             amount: 1e18
         });
 
+        operatorRewards = _sortAddressArrayAsc(operatorRewards);
+
         IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
             memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
                 1
@@ -134,6 +172,8 @@ contract TestRewardsV2 is Script {
             operator: OPERATOR_EIGENYIELDS,
             amount: 1e18
         });
+
+        operatorRewards = _sortAddressArrayAsc(operatorRewards);
 
         IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
             memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
