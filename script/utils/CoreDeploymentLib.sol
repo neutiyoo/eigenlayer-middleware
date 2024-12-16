@@ -3,6 +3,7 @@
 pragma solidity ^0.8.12;
 
 import {Vm} from "forge-std/Vm.sol";
+import {console2 as console} from "forge-std/Test.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 
 library CoreDeploymentLib {
@@ -55,20 +56,25 @@ library CoreDeploymentLib {
         address pauserRegistry;
         address strategyFactory;
         address strategyBeacon;
+        address eigenStrategy;
+        address eigen;
+        address backingEigen;
+        address permissionController;
     }
 
-    function readCoreDeploymentJson(string memory path, uint256 chainId) internal view returns (CoreDeploymentLib.DeploymentData memory) {
-        string memory filePath = string(abi.encodePacked(path, "/", chainId, ".json"));
-        return parseCoreJson(filePath);
+    function readCoreDeploymentJson(string memory path, uint256 chainId) internal returns (CoreDeploymentLib.DeploymentData memory) {
+        string memory filePath = string(abi.encodePacked(path, "/", vm.toString(chainId), ".json"));
+        return parseZeusJson(filePath);
     }
 
-    function readCoreDeploymentJson(string memory path, uint256 chainId, string memory environment) internal view returns (CoreDeploymentLib.DeploymentData memory) {
-        string memory filePath = string(abi.encodePacked(path, "/", chainId, "-", environment, ".json"));
-        return parseCoreJson(filePath);
+    function readCoreDeploymentJson(string memory path, uint256 chainId, string memory environment) internal returns (CoreDeploymentLib.DeploymentData memory) {
+        string memory filePath = string(abi.encodePacked(path, "/", vm.toString(chainId), "-", environment, ".json"));
+        return parseZeusJson(filePath);
     }
 
-    function parseCoreJson(string memory filePath) internal view returns (CoreDeploymentLib.DeploymentData memory) {
+    function parseZeusJson(string memory filePath) internal returns (CoreDeploymentLib.DeploymentData memory) {
         string memory json = vm.readFile(filePath);
+        require(vm.exists(filePath), "Deployment file does not exist");
         CoreDeploymentLib.DeploymentData memory deploymentData;
 
         deploymentData.delegationManager = json.readAddress(".ZEUS_DEPLOYED_DelegationManager_Proxy");
@@ -81,6 +87,10 @@ library CoreDeploymentLib {
         deploymentData.pauserRegistry = json.readAddress(".ZEUS_DEPLOYED_PauserRegistry_Impl");
         deploymentData.strategyFactory = json.readAddress(".ZEUS_DEPLOYED_StrategyFactory_Proxy");
         deploymentData.strategyBeacon = json.readAddress(".ZEUS_DEPLOYED_StrategyBase_Beacon");
+        deploymentData.eigenStrategy = json.readAddress(".ZEUS_DEPLOYED_EigenStrategy_Proxy");
+        deploymentData.eigen = json.readAddress(".ZEUS_DEPLOYED_Eigen_Proxy");
+        deploymentData.backingEigen = json.readAddress(".ZEUS_DEPLOYED_BackingEigen_Proxy");
+        deploymentData.permissionController = json.readAddress(".ZEUS_DEPLOYED_PermissionController_Proxy");
 
         return deploymentData;
     }
