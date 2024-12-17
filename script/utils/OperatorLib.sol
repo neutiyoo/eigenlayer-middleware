@@ -210,4 +210,22 @@ library OperatorLib {
 
         return newOperator;
     }
+
+    function signMessage(
+        BLSWallet memory blsWallet,
+        bytes32 messageHash
+    ) internal view returns (BN254.G1Point memory) {
+        // Hash the message to a point on G1
+        BN254.G1Point memory messagePoint = BN254.hashToG1(messageHash);
+
+        // Sign by multiplying the hashed message point with the private key
+        return messagePoint.scalar_mul(blsWallet.privateKey);
+    }
+
+    function signMessageWithOperator(
+        Operator memory operator,
+        bytes32 messageHash
+    ) internal view returns (BN254.G1Point memory) {
+        return signMessage(operator.signingKey, messageHash);
+    }
 }
