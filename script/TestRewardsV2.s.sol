@@ -184,6 +184,8 @@ contract TestRewardsV2 is Script {
             amount: 1e18 // 1 WETH
         });
 
+        uint256 totalAmount = _calculateTotalAmount(operatorRewards);
+
         IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
             memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
                 1
@@ -198,10 +200,12 @@ contract TestRewardsV2 is Script {
                 description: ""
             });
 
-        vm.broadcast();
+        vm.startBroadcast();
+        WETH.approve(address(eigenDAServiceManager), totalAmount);
         eigenDAServiceManager.createOperatorDirectedAVSRewardsSubmission(
             rewardsSubmissions
         );
+        vm.stopBroadcast();
     }
 
     // Test Operator Directed Rewards Submission: Operator-avs split activated after startTimestamp and before duration end
@@ -219,6 +223,8 @@ contract TestRewardsV2 is Script {
             amount: 1e18 // 1 WETH
         });
 
+        uint256 totalAmount = _calculateTotalAmount(operatorRewards);
+
         IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
             memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
                 1
@@ -233,10 +239,12 @@ contract TestRewardsV2 is Script {
                 description: ""
             });
 
-        vm.broadcast();
+        vm.startBroadcast();
+        WETH.approve(address(eigenDAServiceManager), totalAmount);
         eigenDAServiceManager.createOperatorDirectedAVSRewardsSubmission(
             rewardsSubmissions
         );
+        vm.stopBroadcast();
     }
 
     // Test Operator Directed Rewards Submission: Operator not registered to avs for entire duration
@@ -254,6 +262,8 @@ contract TestRewardsV2 is Script {
             amount: 1e18 // 1 WETH
         });
 
+        uint256 totalAmount = _calculateTotalAmount(operatorRewards);
+
         IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
             memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
                 1
@@ -268,10 +278,12 @@ contract TestRewardsV2 is Script {
                 description: ""
             });
 
-        vm.broadcast();
+        vm.startBroadcast();
+        WETH.approve(address(eigenDAServiceManager), totalAmount);
         eigenDAServiceManager.createOperatorDirectedAVSRewardsSubmission(
             rewardsSubmissions
         );
+        vm.stopBroadcast();
     }
 
     // Test Operator Directed Rewards Submission: Operator not registered to avs for partial duration
@@ -289,6 +301,8 @@ contract TestRewardsV2 is Script {
             amount: 1e18 // 1 WETH
         });
 
+        uint256 totalAmount = _calculateTotalAmount(operatorRewards);
+
         IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
             memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
                 1
@@ -303,10 +317,12 @@ contract TestRewardsV2 is Script {
                 description: ""
             });
 
-        vm.broadcast();
+        vm.startBroadcast();
+        WETH.approve(address(eigenDAServiceManager), totalAmount);
         eigenDAServiceManager.createOperatorDirectedAVSRewardsSubmission(
             rewardsSubmissions
         );
+        vm.stopBroadcast();
     }
 
     // Test Operator Directed Rewards Submission: Staker (0x9999Ee8B5cBA0688DbD4c4Cbbb821800758FbCDD) has withdrawal queued during the duration.
@@ -324,6 +340,8 @@ contract TestRewardsV2 is Script {
             amount: 1e18 // 1 WETH
         });
 
+        uint256 totalAmount = _calculateTotalAmount(operatorRewards);
+
         IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
             memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
                 1
@@ -338,10 +356,12 @@ contract TestRewardsV2 is Script {
                 description: ""
             });
 
-        vm.broadcast();
+        vm.startBroadcast();
+        WETH.approve(address(eigenDAServiceManager), totalAmount);
         eigenDAServiceManager.createOperatorDirectedAVSRewardsSubmission(
             rewardsSubmissions
         );
+        vm.stopBroadcast();
     }
 
     // Test Operator Directed Rewards Submission: Staker (0x17C1c083e46F3924C33da32e4Aa117724DEcdc33) is undelegated during the duration.
@@ -359,6 +379,8 @@ contract TestRewardsV2 is Script {
             amount: 1e18 // 1 WETH
         });
 
+        uint256 totalAmount = _calculateTotalAmount(operatorRewards);
+
         IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
             memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
                 1
@@ -373,9 +395,11 @@ contract TestRewardsV2 is Script {
                 description: ""
             });
 
-        vm.broadcast();
+        vm.startBroadcast();
+        WETH.approve(address(eigenDAServiceManager), totalAmount);
         eigenDAServiceManager.createOperatorDirectedAVSRewardsSubmission(
             rewardsSubmissions
         );
+        vm.stopBroadcast();
     }
 }
