@@ -21,14 +21,87 @@ import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/Pau
 import {UpgradeableProxyLib} from "./UpgradeableProxyLib.sol";
 import {CoreDeploymentLib} from "./CoreDeploymentLib.sol";
 import {ERC20Mock} from "./MiddlewareDeploymentLib.sol";
+import {BN254} from "../../src/libraries/BN254.sol";
+import {BN256G2} from "./BN256G2.sol";
+
 
 library OperatorLib {
+    using BN254 for *;
+    using Strings for uint256;
+
+    struct Wallet {
+        uint256 privateKey;
+        address addr;
+    }
+
+    struct BLSWallet {
+        uint256 privateKey;
+        BN254.G2Point publicKeyG2;
+        BN254.G1Point publicKeyG1;
+    }
 
     Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
-    /// TODO BLS Wallet
+
     struct Operator {
-        Vm.Wallet key;
-        Vm.Wallet signingKey;
+        Wallet key;
+        BLSWallet signingKey;
+    }
+
+    function createBLSWallet(uint256 index) internal returns (BLSWallet memory) {
+        uint256 privateKey = uint256(keccak256(abi.encodePacked(index + 1)));
+        BN254.G1Point memory publicKeyG1 = BN254.generatorG1().scalar_mul(privateKey);
+        BN254.G2Point memory publicKeyG2 = mul(privateKey);
+
+        return BLSWallet({
+            privateKey: privateKey,
+            publicKeyG2: publicKeyG2,
+            publicKeyG1: publicKeyG1
+        });
+    }
+
+    function createWallet(uint256 index) internal pure returns (Wallet memory) {
+        uint256 privateKey = uint256(keccak256(abi.encodePacked(index)));
+        address addr = vm.addr(privateKey);
+
+        return Wallet({
+            privateKey: privateKey,
+            addr: addr
+        });
+    }
+
+    function createOperator(uint256 index) internal returns (Operator memory) {
+        Wallet memory vmWallet = createWallet(index);
+        BLSWallet memory blsWallet = createBLSWallet(index);
+
+        return Operator({
+            key: vmWallet,
+            signingKey: blsWallet
+        });
+    }
+
+
+    function mul(uint256 x) internal returns (BN254.G2Point memory g2Point) {
+        string[] memory inputs = new string[](5);
+        inputs[0] = "go";
+        inputs[1] = "run";
+        inputs[2] = "test/ffi/go/g2mul.go";
+        inputs[3] = x.toString();
+
+        inputs[4] = "1";
+        bytes memory res = vm.ffi(inputs);
+        g2Point.X[1] = abi.decode(res, (uint256));
+
+        inputs[4] = "2";
+        res = vm.ffi(inputs);
+        g2Point.X[0] = abi.decode(res, (uint256));
+
+        inputs[4] = "3";
+        res = vm.ffi(inputs);
+        g2Point.Y[1] = abi.decode(res, (uint256));
+
+        inputs[4] = "4";
+        res = vm.ffi(inputs);
+        g2Point.Y[0] = abi.decode(res, (uint256));
     }
 
     function signWithOperatorKey(
@@ -45,6 +118,14 @@ library OperatorLib {
     ) internal pure returns (bytes memory) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(operator.signingKey.privateKey, digest);
         return abi.encodePacked(r, s, v);
+    }
+
+    function aggregate(
+        BN254.G2Point memory pk1,
+        BN254.G2Point memory pk2
+    ) internal view returns (BN254.G2Point memory apk) {
+        (apk.X[0], apk.X[1], apk.Y[0], apk.Y[1]) =
+            BN256G2.ECTwistAdd(pk1.X[0], pk1.X[1], pk1.Y[0], pk1.Y[1], pk2.X[0], pk2.X[1], pk2.Y[0], pk2.Y[1]);
     }
 
     function mintMockTokens(Operator memory operator, address token, uint256 amount) internal {
@@ -119,11 +200,11 @@ library OperatorLib {
     }
 
     function createAndAddOperator(uint256 salt) internal returns (Operator memory) {
-        Vm.Wallet memory operatorKey =
-            vm.createWallet(string.concat("operator", vm.toString(salt)));
+        Wallet memory operatorKey =
+            createWallet(salt);
         /// TODO: BLS Key for signing key.  Integrate G2Operations.sol
-        Vm.Wallet memory signingKey =
-            vm.createWallet(string.concat("signing", vm.toString(salt)));
+        BLSWallet memory signingKey =
+            createBLSWallet(salt);
 
         Operator memory newOperator = Operator({key: operatorKey, signingKey: signingKey});
 
