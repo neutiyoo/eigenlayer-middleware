@@ -97,6 +97,52 @@ contract TestRewardsV2 is Script {
         eigenDAServiceManager.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
+    // Test PI v1 submission: 1. Operator-avs split left unset,  2. Operator-avs split activated before startTimestamp
+    // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_2()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
+    function tx_3() public {
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory strategyAndMultipliers = _setupStrategyAndMultiplier();
+
+        IRewardsCoordinator.RewardsSubmission[]
+            memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+                1
+            );
+
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+            strategiesAndMultipliers: strategyAndMultipliers,
+            token: WETH,
+            amount: 1e18, // 1 WETH
+            startTimestamp: uint32(1734220800), // 2024-12-15 00:00:00 UTC
+            duration: uint32(86400) // 1 day
+        });
+
+        vm.broadcast();
+        rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
+    }
+
+    // Test PI v1 submission: 1. Operator-avs split left unset,  2. Operator-avs split activated before startTimestamp
+    // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_2()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
+    function tx_4() public {
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory strategyAndMultipliers = _setupStrategyAndMultiplier();
+
+        IRewardsCoordinator.RewardsSubmission[]
+            memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+                1
+            );
+
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+            strategiesAndMultipliers: strategyAndMultipliers,
+            token: WETH,
+            amount: 1.2e18, // 1.2 WETH
+            startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
+            duration: uint32(518400) // 6 days
+        });
+
+        vm.broadcast();
+        rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
+    }
+
     // function tx_5() public {
     //     _setupStrategyAndMultiplier();
 
