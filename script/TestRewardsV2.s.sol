@@ -259,7 +259,7 @@ contract TestRewardsV2 is Script {
             );
         operatorRewards[0] = IRewardsCoordinator.OperatorReward({
             operator: OPERATOR_XYZ,
-            amount: 1e18 // 1 WETH
+            amount: 0.9e18 // 0.9 WETH
         });
 
         uint256 totalAmount = _calculateTotalAmount(operatorRewards);
@@ -298,7 +298,7 @@ contract TestRewardsV2 is Script {
             );
         operatorRewards[0] = IRewardsCoordinator.OperatorReward({
             operator: OPERATOR_XYZ,
-            amount: 1e18 // 1 WETH
+            amount: 1.4e18 // 1.4 WETH
         });
 
         uint256 totalAmount = _calculateTotalAmount(operatorRewards);
@@ -337,7 +337,7 @@ contract TestRewardsV2 is Script {
             );
         operatorRewards[0] = IRewardsCoordinator.OperatorReward({
             operator: OPERATOR_GALAXY,
-            amount: 1e18 // 1 WETH
+            amount: 1.2e18 // 1.2 WETH
         });
 
         uint256 totalAmount = _calculateTotalAmount(operatorRewards);
@@ -376,7 +376,7 @@ contract TestRewardsV2 is Script {
             );
         operatorRewards[0] = IRewardsCoordinator.OperatorReward({
             operator: OPERATOR_SINOPMM,
-            amount: 1e18 // 1 WETH
+            amount: 1.2e18 // 1.2 WETH
         });
 
         uint256 totalAmount = _calculateTotalAmount(operatorRewards);
