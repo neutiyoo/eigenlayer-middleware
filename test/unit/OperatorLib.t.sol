@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import {OperatorLib} from "../../script/utils/OperatorLib.sol";
+import {BN254} from "../../src/libraries/BN254.sol";
 
 contract OperatorLibTest is Test {
     using OperatorLib for *;
@@ -24,6 +25,25 @@ contract OperatorLibTest is Test {
         // Check that the operator's BLS public key G2 is non-zero
         assertTrue(operator.signingKey.publicKeyG2.X[0] != 0 || operator.signingKey.publicKeyG2.X[1] != 0, "BLS public key G2 X should be non-zero");
         assertTrue(operator.signingKey.publicKeyG2.Y[0] != 0 || operator.signingKey.publicKeyG2.Y[1] != 0, "BLS public key G2 Y should be non-zero");
+    }
+
+    function testSignAndVerifyMessage() public {
+        uint256 index = 1;
+        OperatorLib.Operator memory operator = OperatorLib.createOperator(index);
+
+        bytes32 messageHash = keccak256(abi.encodePacked("Test message"));
+        BN254.G1Point memory signature = OperatorLib.signMessageWithOperator(operator, messageHash);
+        BN254.G1Point memory messagePoint = BN254.hashToG1(messageHash);
+
+        bool isValid = BN254.pairing(
+            BN254.negate(signature),
+            BN254.generatorG2(),
+            messagePoint,
+            operator.signingKey.publicKeyG2
+        );
+
+        // Check that the signature is valid
+        assertTrue(isValid, "Signature should be valid");
     }
 }
 

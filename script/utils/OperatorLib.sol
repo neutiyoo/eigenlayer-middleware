@@ -202,7 +202,6 @@ library OperatorLib {
     function createAndAddOperator(uint256 salt) internal returns (Operator memory) {
         Wallet memory operatorKey =
             createWallet(salt);
-        /// TODO: BLS Key for signing key.  Integrate G2Operations.sol
         BLSWallet memory signingKey =
             createBLSWallet(salt);
 
