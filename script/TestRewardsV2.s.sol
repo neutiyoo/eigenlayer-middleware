@@ -402,4 +402,121 @@ contract TestRewardsV2 is Script {
         );
         vm.stopBroadcast();
     }
+
+    // Test Operator Directed Rewards Submission: Dust payment of 1 wei over 1 day duration
+    // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_11()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
+    function tx_11() public {
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory strategyAndMultipliers = _setupStrategyAndMultiplier();
+
+        IRewardsCoordinator.OperatorReward[]
+            memory operatorRewards = new IRewardsCoordinator.OperatorReward[](
+                1
+            );
+        operatorRewards[0] = IRewardsCoordinator.OperatorReward({
+            operator: OPERATOR_STAKELY,
+            amount: 1 // 1e-18 WETH (1 wei)
+        });
+
+        uint256 totalAmount = _calculateTotalAmount(operatorRewards);
+
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
+                1
+            );
+        rewardsSubmissions[0] = IRewardsCoordinator
+            .OperatorDirectedRewardsSubmission({
+                strategiesAndMultipliers: strategyAndMultipliers,
+                token: WETH,
+                operatorRewards: operatorRewards,
+                startTimestamp: uint32(1734220800), // 2024-12-15 00:00:00 UTC
+                duration: uint32(86400), // 1 day
+                description: ""
+            });
+
+        vm.startBroadcast();
+        WETH.approve(address(eigenDAServiceManager), totalAmount);
+        eigenDAServiceManager.createOperatorDirectedAVSRewardsSubmission(
+            rewardsSubmissions
+        );
+        vm.stopBroadcast();
+    }
+
+    // Test Operator Directed Rewards Submission: Dust payment of 1 wei over 6 days duration
+    // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_12()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
+    function tx_12() public {
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory strategyAndMultipliers = _setupStrategyAndMultiplier();
+
+        IRewardsCoordinator.OperatorReward[]
+            memory operatorRewards = new IRewardsCoordinator.OperatorReward[](
+                1
+            );
+        operatorRewards[0] = IRewardsCoordinator.OperatorReward({
+            operator: OPERATOR_STAKELY,
+            amount: 1 // 1e-18 WETH (1 wei)
+        });
+
+        uint256 totalAmount = _calculateTotalAmount(operatorRewards);
+
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
+                1
+            );
+        rewardsSubmissions[0] = IRewardsCoordinator
+            .OperatorDirectedRewardsSubmission({
+                strategiesAndMultipliers: strategyAndMultipliers,
+                token: WETH,
+                operatorRewards: operatorRewards,
+                startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
+                duration: uint32(518400), // 6 days
+                description: ""
+            });
+
+        vm.startBroadcast();
+        WETH.approve(address(eigenDAServiceManager), totalAmount);
+        eigenDAServiceManager.createOperatorDirectedAVSRewardsSubmission(
+            rewardsSubmissions
+        );
+        vm.stopBroadcast();
+    }
+
+    // Test Operator Directed Rewards Submission: Dust payment of 60 wei over 6 days duration
+    // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_13()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
+    function tx_13() public {
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory strategyAndMultipliers = _setupStrategyAndMultiplier();
+
+        IRewardsCoordinator.OperatorReward[]
+            memory operatorRewards = new IRewardsCoordinator.OperatorReward[](
+                1
+            );
+        operatorRewards[0] = IRewardsCoordinator.OperatorReward({
+            operator: OPERATOR_STAKELY,
+            amount: 60 // 60e-18 WETH (1 wei)
+        });
+
+        uint256 totalAmount = _calculateTotalAmount(operatorRewards);
+
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
+                1
+            );
+        rewardsSubmissions[0] = IRewardsCoordinator
+            .OperatorDirectedRewardsSubmission({
+                strategiesAndMultipliers: strategyAndMultipliers,
+                token: WETH,
+                operatorRewards: operatorRewards,
+                startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
+                duration: uint32(518400), // 6 days
+                description: ""
+            });
+
+        vm.startBroadcast();
+        WETH.approve(address(eigenDAServiceManager), totalAmount);
+        eigenDAServiceManager.createOperatorDirectedAVSRewardsSubmission(
+            rewardsSubmissions
+        );
+        vm.stopBroadcast();
+    }
 }
