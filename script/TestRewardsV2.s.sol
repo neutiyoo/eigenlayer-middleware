@@ -61,7 +61,6 @@ contract TestRewardsV2 is Script {
             memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
                 1
             );
-
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: strategyAndMultipliers,
             token: WETH,
@@ -84,7 +83,6 @@ contract TestRewardsV2 is Script {
             memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
                 1
             );
-
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: strategyAndMultipliers,
             token: WETH,
@@ -107,7 +105,6 @@ contract TestRewardsV2 is Script {
             memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
                 1
             );
-
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: strategyAndMultipliers,
             token: WETH,
@@ -130,7 +127,6 @@ contract TestRewardsV2 is Script {
             memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
                 1
             );
-
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: strategyAndMultipliers,
             token: WETH,
@@ -153,7 +149,6 @@ contract TestRewardsV2 is Script {
             memory operatorRewards = new IRewardsCoordinator.OperatorReward[](
                 2
             );
-
         operatorRewards[0] = IRewardsCoordinator.OperatorReward({
             operator: OPERATOR_STAKELY,
             amount: 1e18 // 1 WETH
@@ -167,7 +162,6 @@ contract TestRewardsV2 is Script {
             memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
                 1
             );
-
         rewardsSubmissions[0] = IRewardsCoordinator
             .OperatorDirectedRewardsSubmission({
                 strategiesAndMultipliers: strategyAndMultipliers,
@@ -194,7 +188,6 @@ contract TestRewardsV2 is Script {
             memory operatorRewards = new IRewardsCoordinator.OperatorReward[](
                 1
             );
-
         operatorRewards[0] = IRewardsCoordinator.OperatorReward({
             operator: OPERATOR_EIGENYIELDS,
             amount: 1e18 // 1 WETH
@@ -204,7 +197,6 @@ contract TestRewardsV2 is Script {
             memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
                 1
             );
-
         rewardsSubmissions[0] = IRewardsCoordinator
             .OperatorDirectedRewardsSubmission({
                 strategiesAndMultipliers: strategyAndMultipliers,
