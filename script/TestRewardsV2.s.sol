@@ -212,4 +212,39 @@ contract TestRewardsV2 is Script {
             rewardsSubmissions
         );
     }
+
+    // Test Operator Directed Rewards Submission: Operator not registered to avs for entire duration
+    // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_7()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
+    function tx_7() public {
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory strategyAndMultipliers = _setupStrategyAndMultiplier();
+
+        IRewardsCoordinator.OperatorReward[]
+            memory operatorRewards = new IRewardsCoordinator.OperatorReward[](
+                1
+            );
+        operatorRewards[0] = IRewardsCoordinator.OperatorReward({
+            operator: OPERATOR_XYZ,
+            amount: 1e18 // 1 WETH
+        });
+
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
+                1
+            );
+        rewardsSubmissions[0] = IRewardsCoordinator
+            .OperatorDirectedRewardsSubmission({
+                strategiesAndMultipliers: strategyAndMultipliers,
+                token: WETH,
+                operatorRewards: operatorRewards,
+                startTimestamp: uint32(1734048000), // 2024-12-13 00:00:00 UTC
+                duration: uint32(259200), // 3 days
+                description: ""
+            });
+
+        vm.broadcast();
+        eigenDAServiceManager.createOperatorDirectedAVSRewardsSubmission(
+            rewardsSubmissions
+        );
+    }
 }
