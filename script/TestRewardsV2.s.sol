@@ -51,7 +51,7 @@ contract TestRewardsV2 is Script {
         return defaultStrategyAndMultipliers;
     }
 
-    // Test Rewards v1 submission: Operator-avs split left unset
+    // Test Rewards v1 submission: 1. Operator-avs split left unset,  2. Operator-avs split activated before startTimestamp
     // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_1()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
     function tx_1() public {
         IRewardsCoordinator.StrategyAndMultiplier[]
@@ -65,7 +65,7 @@ contract TestRewardsV2 is Script {
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
             strategiesAndMultipliers: strategyAndMultipliers,
             token: WETH,
-            amount: 1e18,
+            amount: 1e18, // 1 WETH
             startTimestamp: uint32(1734220800), // 2024-12-15 00:00:00 UTC
             duration: uint32(86400) // 1 day
         });
@@ -74,25 +74,28 @@ contract TestRewardsV2 is Script {
         eigenDAServiceManager.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
-    // function tx_2() public {
-    //     _setupStrategyAndMultiplier();
+    // Test Rewards v1 submission: Operator-avs split activated after startTimestamp and before duration end
+    // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_2()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
+    function tx_2() public {
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory strategyAndMultipliers = _setupStrategyAndMultiplier();
 
-    //     IRewardsCoordinator.RewardsSubmission[]
-    //         memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-    //             1
-    //         );
+        IRewardsCoordinator.RewardsSubmission[]
+            memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+                1
+            );
 
-    //     rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
-    //         strategiesAndMultipliers: defaultStrategyAndMultipliers,
-    //         token: WETH,
-    //         amount: 1e18,
-    //         startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
-    //         duration: uint32(518400) // 6 days
-    //     });
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+            strategiesAndMultipliers: strategyAndMultipliers,
+            token: WETH,
+            amount: 1.2e18, // 1.2 WETH
+            startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
+            duration: uint32(518400) // 6 days
+        });
 
-    //     vm.broadcast();
-    //     eigenDAServiceManager.createAVSRewardsSubmission(rewardsSubmissions);
-    // }
+        vm.broadcast();
+        eigenDAServiceManager.createAVSRewardsSubmission(rewardsSubmissions);
+    }
 
     // function tx_5() public {
     //     _setupStrategyAndMultiplier();
