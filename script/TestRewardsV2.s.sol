@@ -247,4 +247,109 @@ contract TestRewardsV2 is Script {
             rewardsSubmissions
         );
     }
+
+    // Test Operator Directed Rewards Submission: Operator not registered to avs for partial duration
+    // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_8()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
+    function tx_8() public {
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory strategyAndMultipliers = _setupStrategyAndMultiplier();
+
+        IRewardsCoordinator.OperatorReward[]
+            memory operatorRewards = new IRewardsCoordinator.OperatorReward[](
+                1
+            );
+        operatorRewards[0] = IRewardsCoordinator.OperatorReward({
+            operator: OPERATOR_XYZ,
+            amount: 1e18 // 1 WETH
+        });
+
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
+                1
+            );
+        rewardsSubmissions[0] = IRewardsCoordinator
+            .OperatorDirectedRewardsSubmission({
+                strategiesAndMultipliers: strategyAndMultipliers,
+                token: WETH,
+                operatorRewards: operatorRewards,
+                startTimestamp: uint32(1733702400), // 2024-12-09 00:00:00 UTC
+                duration: uint32(604800), // 7 days
+                description: ""
+            });
+
+        vm.broadcast();
+        eigenDAServiceManager.createOperatorDirectedAVSRewardsSubmission(
+            rewardsSubmissions
+        );
+    }
+
+    // Test Operator Directed Rewards Submission: Staker (0x9999Ee8B5cBA0688DbD4c4Cbbb821800758FbCDD) has withdrawal queued during the duration.
+    // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_9()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
+    function tx_9() public {
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory strategyAndMultipliers = _setupStrategyAndMultiplier();
+
+        IRewardsCoordinator.OperatorReward[]
+            memory operatorRewards = new IRewardsCoordinator.OperatorReward[](
+                1
+            );
+        operatorRewards[0] = IRewardsCoordinator.OperatorReward({
+            operator: OPERATOR_GALAXY,
+            amount: 1e18 // 1 WETH
+        });
+
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
+                1
+            );
+        rewardsSubmissions[0] = IRewardsCoordinator
+            .OperatorDirectedRewardsSubmission({
+                strategiesAndMultipliers: strategyAndMultipliers,
+                token: WETH,
+                operatorRewards: operatorRewards,
+                startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
+                duration: uint32(518400), // 6 days
+                description: ""
+            });
+
+        vm.broadcast();
+        eigenDAServiceManager.createOperatorDirectedAVSRewardsSubmission(
+            rewardsSubmissions
+        );
+    }
+
+    // Test Operator Directed Rewards Submission: Staker (0x17C1c083e46F3924C33da32e4Aa117724DEcdc33) is undelegated during the duration.
+    // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_10()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
+    function tx_10() public {
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory strategyAndMultipliers = _setupStrategyAndMultiplier();
+
+        IRewardsCoordinator.OperatorReward[]
+            memory operatorRewards = new IRewardsCoordinator.OperatorReward[](
+                1
+            );
+        operatorRewards[0] = IRewardsCoordinator.OperatorReward({
+            operator: OPERATOR_SINOPMM,
+            amount: 1e18 // 1 WETH
+        });
+
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
+                1
+            );
+        rewardsSubmissions[0] = IRewardsCoordinator
+            .OperatorDirectedRewardsSubmission({
+                strategiesAndMultipliers: strategyAndMultipliers,
+                token: WETH,
+                operatorRewards: operatorRewards,
+                startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
+                duration: uint32(518400), // 6 days
+                description: ""
+            });
+
+        vm.broadcast();
+        eigenDAServiceManager.createOperatorDirectedAVSRewardsSubmission(
+            rewardsSubmissions
+        );
+    }
 }
