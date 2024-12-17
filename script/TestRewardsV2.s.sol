@@ -220,7 +220,7 @@ contract TestRewardsV2 is Script {
             );
         operatorRewards[0] = IRewardsCoordinator.OperatorReward({
             operator: OPERATOR_EIGENYIELDS,
-            amount: 1e18 // 1 WETH
+            amount: 1.2e18 // 1.2 WETH
         });
 
         uint256 totalAmount = _calculateTotalAmount(operatorRewards);
