@@ -11,11 +11,14 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
 import {IRegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
+import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {IStrategyManager} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import {IAllocationManager, IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {IStrategyFactory} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyFactory.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {UpgradeableProxyLib} from "./UpgradeableProxyLib.sol";
@@ -167,37 +170,72 @@ library OperatorLib {
     function registerOperatorToAVS_M2(
         Operator memory operator,
         address avsDirectory,
-        address serviceManager
+        address serviceManager,
+        address registryCoordinator,
+        bytes calldata quorumNumbers,
+        string memory socket
     ) internal {
-        IAVSDirectory avsDirectory = IAVSDirectory(avsDirectory);
+        IAVSDirectory avsDirectoryInstance = IAVSDirectory(avsDirectory);
+        RegistryCoordinator registryCoordinatorInstance = RegistryCoordinator(registryCoordinator);
 
         bytes32 salt = keccak256(abi.encodePacked(block.timestamp, operator.key.addr));
         uint256 expiry = block.timestamp + 1 hours;
 
-        bytes32 operatorRegistrationDigestHash = avsDirectory
+        bytes32 operatorRegistrationDigestHash = avsDirectoryInstance
             .calculateOperatorAVSRegistrationDigestHash(
             operator.key.addr, serviceManager, salt, expiry
         );
 
         bytes memory signature = signWithOperatorKey(operator, operatorRegistrationDigestHash);
+        IBLSApkRegistry.PubkeyRegistrationParams memory params;
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = ISignatureUtils
             .SignatureWithSaltAndExpiry({signature: signature, salt: salt, expiry: expiry});
 
-        /// TODO: call the registry
+        // Call the registerOperator function on the registry
+        registryCoordinatorInstance.registerOperator(quorumNumbers, socket, params, operatorSignature);
     }
 
-    function deregisterOperatorFromAVS_M2() internal {
-        /// TODO: call the registry
-
+    function deregisterOperatorFromAVS_M2(Operator memory operator, address registryCoordinator) internal {
+        RegistryCoordinator(registryCoordinator).deregisterOperator("");
     }
 
-    function registerOperatorFromAVS_OpSet() internal {
-        /// TODO: call the ALM
+    function registerOperatorFromAVS_OpSet(
+        Operator memory operator,
+        address allocationManager,
+        address avs,
+        uint32[] calldata operatorSetIds,
+        bytes calldata data
+    ) internal {
+        IAllocationManager allocationManagerInstance = IAllocationManager(allocationManager);
+
+        /// TODO: Create data for registry Coordinator
+        IAllocationManagerTypes.RegisterParams memory params = IAllocationManagerTypes.RegisterParams({
+            avs: avs,
+            operatorSetIds: operatorSetIds,
+            data: data
+        });
+
+        // Register the operator in the Allocation Manager
+        allocationManagerInstance.registerForOperatorSets(operator.key.addr, params);
     }
 
-    function deregisterOperatorFromAVS_OpSet() internal {
-        /// TODO: call the ALM
+    function deregisterOperatorFromAVS_OpSet(
+        Operator memory operator,
+        address allocationManager,
+        address avs,
+        uint32[] calldata operatorSetIds
+    ) internal {
+        IAllocationManager allocationManagerInstance = IAllocationManager(allocationManager);
+
+        IAllocationManagerTypes.DeregisterParams memory params = IAllocationManagerTypes.DeregisterParams({
+            operator: operator.key.addr,
+            avs: avs,
+            operatorSetIds: operatorSetIds
+        });
+
+        // Deregister the operator in the Allocation Manager
+        allocationManagerInstance.deregisterFromOperatorSets(params);
     }
 
     function createAndAddOperator(uint256 salt) internal returns (Operator memory) {
