@@ -10,7 +10,7 @@ contract OperatorLibTest is Test {
 
     function testCreateOperator() public {
         uint256 index = 1;
-        OperatorLib.Operator memory operator = OperatorLib.createOperator(index);
+        OperatorLib.Operator memory operator = OperatorLib.createOperator("operator-1");
 
         assertTrue(operator.key.addr != address(0), "VM wallet address should be non-zero");
 
@@ -24,8 +24,7 @@ contract OperatorLibTest is Test {
     }
 
     function testSignAndVerifyMessage() public {
-        uint256 index = 1;
-        OperatorLib.Operator memory operator = OperatorLib.createOperator(index);
+        OperatorLib.Operator memory operator = OperatorLib.createOperator("operator-1");
 
         bytes32 messageHash = keccak256(abi.encodePacked("Test message"));
         BN254.G1Point memory signature = OperatorLib.signMessageWithOperator(operator, messageHash);

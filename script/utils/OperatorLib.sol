@@ -47,8 +47,8 @@ library OperatorLib {
         BLSWallet signingKey;
     }
 
-    function createBLSWallet(uint256 index) internal returns (BLSWallet memory) {
-        uint256 privateKey = uint256(keccak256(abi.encodePacked(index + 1)));
+    function createBLSWallet(uint256 salt) internal returns (BLSWallet memory) {
+        uint256 privateKey = uint256(keccak256(abi.encodePacked(salt)));
         BN254.G1Point memory publicKeyG1 = BN254.generatorG1().scalar_mul(privateKey);
         BN254.G2Point memory publicKeyG2 = mul(privateKey);
 
@@ -59,8 +59,8 @@ library OperatorLib {
         });
     }
 
-    function createWallet(uint256 index) internal pure returns (Wallet memory) {
-        uint256 privateKey = uint256(keccak256(abi.encodePacked(index)));
+    function createWallet(uint256 salt) internal pure returns (Wallet memory) {
+        uint256 privateKey = uint256(keccak256(abi.encodePacked(salt)));
         address addr = vm.addr(privateKey);
 
         return Wallet({
@@ -69,9 +69,10 @@ library OperatorLib {
         });
     }
 
-    function createOperator(uint256 index) internal returns (Operator memory) {
-        Wallet memory vmWallet = createWallet(index);
-        BLSWallet memory blsWallet = createBLSWallet(index);
+    function createOperator(string memory name) internal returns (Operator memory) {
+        uint256 salt = uint256(keccak256(abi.encodePacked(name)));
+        Wallet memory vmWallet = createWallet(salt);
+        BLSWallet memory blsWallet = createBLSWallet(salt);
 
         return Operator({
             key: vmWallet,
