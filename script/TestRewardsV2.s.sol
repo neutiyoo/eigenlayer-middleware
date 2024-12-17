@@ -29,62 +29,33 @@ contract TestRewardsV2 is Script {
     IStrategy STRATEGY_STETH =
         IStrategy(0x7D704507b76571a51d9caE8AdDAbBFd0ba0e63d3);
 
-    IRewardsCoordinator.StrategyAndMultiplier[] defaultStrategyAndMultipliers;
-
-    function _setupStrategyAndMultiplier() internal {
-        defaultStrategyAndMultipliers = new IRewardsCoordinator.StrategyAndMultiplier[](
-            2
-        );
+    function _setupStrategyAndMultiplier()
+        internal
+        view
+        returns (IRewardsCoordinator.StrategyAndMultiplier[] memory)
+    {
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory defaultStrategyAndMultipliers = new IRewardsCoordinator.StrategyAndMultiplier[](
+                2
+            );
 
         defaultStrategyAndMultipliers[0] = IRewardsCoordinator
-            .StrategyAndMultiplier({strategy: STRATEGY_WETH, multiplier: 2e18});
-
-        defaultStrategyAndMultipliers[1] = IRewardsCoordinator
             .StrategyAndMultiplier({
                 strategy: STRATEGY_STETH,
                 multiplier: 1e18
             });
 
-        defaultStrategyAndMultipliers = _sortStrategyArrayAsc(
-            defaultStrategyAndMultipliers
-        );
+        defaultStrategyAndMultipliers[1] = IRewardsCoordinator
+            .StrategyAndMultiplier({strategy: STRATEGY_WETH, multiplier: 2e18});
+
+        return defaultStrategyAndMultipliers;
     }
 
-    function _sortStrategyArrayAsc(
-        IStrategy[] memory arr
-    ) internal pure returns (IStrategy[] memory) {
-        uint256 l = arr.length;
-        for (uint256 i = 0; i < l; i++) {
-            for (uint256 j = i + 1; j < l; j++) {
-                if (address(arr[i]) > address(arr[j])) {
-                    IStrategy temp = arr[i];
-                    arr[i] = arr[j];
-                    arr[j] = temp;
-                }
-            }
-        }
-        return arr;
-    }
-
-    /// @dev Sort to ensure that the array is in ascending order for addresses
-    function _sortAddressArrayAsc(
-        address[] memory arr
-    ) internal pure returns (address[] memory) {
-        uint256 l = arr.length;
-        for (uint256 i = 0; i < l; i++) {
-            for (uint256 j = i + 1; j < l; j++) {
-                if (arr[i] > arr[j]) {
-                    address temp = arr[i];
-                    arr[i] = arr[j];
-                    arr[j] = temp;
-                }
-            }
-        }
-        return arr;
-    }
-
+    // Test Rewards v1 submission: Operator-avs split left unset
+    // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_1()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
     function tx_1() public {
-        _setupStrategyAndMultiplier();
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory strategyAndMultipliers = _setupStrategyAndMultiplier();
 
         IRewardsCoordinator.RewardsSubmission[]
             memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
@@ -92,7 +63,7 @@ contract TestRewardsV2 is Script {
             );
 
         rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
-            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            strategiesAndMultipliers: strategyAndMultipliers,
             token: WETH,
             amount: 1e18,
             startTimestamp: uint32(1734220800), // 2024-12-15 00:00:00 UTC
@@ -103,95 +74,95 @@ contract TestRewardsV2 is Script {
         eigenDAServiceManager.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
-    function tx_2() public {
-        _setupStrategyAndMultiplier();
+    // function tx_2() public {
+    //     _setupStrategyAndMultiplier();
 
-        IRewardsCoordinator.RewardsSubmission[]
-            memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
-                1
-            );
+    //     IRewardsCoordinator.RewardsSubmission[]
+    //         memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+    //             1
+    //         );
 
-        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
-            strategiesAndMultipliers: defaultStrategyAndMultipliers,
-            token: WETH,
-            amount: 1e18,
-            startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
-            duration: uint32(518400) // 6 days
-        });
+    //     rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+    //         strategiesAndMultipliers: defaultStrategyAndMultipliers,
+    //         token: WETH,
+    //         amount: 1e18,
+    //         startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
+    //         duration: uint32(518400) // 6 days
+    //     });
 
-        vm.broadcast();
-        eigenDAServiceManager.createAVSRewardsSubmission(rewardsSubmissions);
-    }
+    //     vm.broadcast();
+    //     eigenDAServiceManager.createAVSRewardsSubmission(rewardsSubmissions);
+    // }
 
-    function tx_5() public {
-        _setupStrategyAndMultiplier();
+    // function tx_5() public {
+    //     _setupStrategyAndMultiplier();
 
-        IRewardsCoordinator.OperatorReward[]
-            memory operatorRewards = new IRewardsCoordinator.OperatorReward[](
-                2
-            );
+    //     IRewardsCoordinator.OperatorReward[]
+    //         memory operatorRewards = new IRewardsCoordinator.OperatorReward[](
+    //             2
+    //         );
 
-        operatorRewards[0] = IRewardsCoordinator.OperatorReward({
-            operator: OPERATOR_STAKELY,
-            amount: 1e18
-        });
-        operatorRewards[1] = IRewardsCoordinator.OperatorReward({
-            operator: OPERATOR_EIGENYIELDS,
-            amount: 1e18
-        });
+    //     operatorRewards[0] = IRewardsCoordinator.OperatorReward({
+    //         operator: OPERATOR_STAKELY,
+    //         amount: 1e18
+    //     });
+    //     operatorRewards[1] = IRewardsCoordinator.OperatorReward({
+    //         operator: OPERATOR_EIGENYIELDS,
+    //         amount: 1e18
+    //     });
 
-        operatorRewards = _sortAddressArrayAsc(operatorRewards);
+    //     operatorRewards = _sortAddressArrayAsc(operatorRewards);
 
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
-                1
-            );
+    //     IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+    //         memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
+    //             1
+    //         );
 
-        rewardsSubmissions[0] = IRewardsCoordinator
-            .OperatorDirectedRewardsSubmission({
-                strategiesAndMultipliers: defaultStrategyAndMultipliers,
-                token: WETH,
-                operatorRewards: operatorRewards,
-                startTimestamp: uint32(1734220800), // 2024-12-15 00:00:00 UTC
-                duration: uint32(86400), // 1 day
-                description: ""
-            });
+    //     rewardsSubmissions[0] = IRewardsCoordinator
+    //         .OperatorDirectedRewardsSubmission({
+    //             strategiesAndMultipliers: defaultStrategyAndMultipliers,
+    //             token: WETH,
+    //             operatorRewards: operatorRewards,
+    //             startTimestamp: uint32(1734220800), // 2024-12-15 00:00:00 UTC
+    //             duration: uint32(86400), // 1 day
+    //             description: ""
+    //         });
 
-        vm.broadcast();
-        eigenDAServiceManager.createAVSRewardsSubmission(rewardsSubmissions);
-    }
+    //     vm.broadcast();
+    //     eigenDAServiceManager.createAVSRewardsSubmission(rewardsSubmissions);
+    // }
 
-    function tx_6() public {
-        _setupStrategyAndMultiplier();
+    // function tx_6() public {
+    //     _setupStrategyAndMultiplier();
 
-        IRewardsCoordinator.OperatorReward[]
-            memory operatorRewards = new IRewardsCoordinator.OperatorReward[](
-                1
-            );
+    //     IRewardsCoordinator.OperatorReward[]
+    //         memory operatorRewards = new IRewardsCoordinator.OperatorReward[](
+    //             1
+    //         );
 
-        operatorRewards[0] = IRewardsCoordinator.OperatorReward({
-            operator: OPERATOR_EIGENYIELDS,
-            amount: 1e18
-        });
+    //     operatorRewards[0] = IRewardsCoordinator.OperatorReward({
+    //         operator: OPERATOR_EIGENYIELDS,
+    //         amount: 1e18
+    //     });
 
-        operatorRewards = _sortAddressArrayAsc(operatorRewards);
+    //     operatorRewards = _sortAddressArrayAsc(operatorRewards);
 
-        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
-            memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
-                1
-            );
+    //     IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+    //         memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
+    //             1
+    //         );
 
-        rewardsSubmissions[0] = IRewardsCoordinator
-            .OperatorDirectedRewardsSubmission({
-                strategiesAndMultipliers: defaultStrategyAndMultipliers,
-                token: WETH,
-                operatorRewards: operatorRewards,
-                startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
-                duration: uint32(518400), // 6 days
-                description: ""
-            });
+    //     rewardsSubmissions[0] = IRewardsCoordinator
+    //         .OperatorDirectedRewardsSubmission({
+    //             strategiesAndMultipliers: defaultStrategyAndMultipliers,
+    //             token: WETH,
+    //             operatorRewards: operatorRewards,
+    //             startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
+    //             duration: uint32(518400), // 6 days
+    //             description: ""
+    //         });
 
-        vm.broadcast();
-        eigenDAServiceManager.createAVSRewardsSubmission(rewardsSubmissions);
-    }
+    //     vm.broadcast();
+    //     eigenDAServiceManager.createAVSRewardsSubmission(rewardsSubmissions);
+    // }
 }
