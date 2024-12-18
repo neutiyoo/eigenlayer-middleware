@@ -174,12 +174,12 @@ contract OperatorLibTest is Test {
             OperatorLib.registerOperatorFromAVS_OpSet(
                 operators[i],
                 coreDeployment.allocationManager,
+                middlewareDeployment.registryCoordinator,
                 middlewareDeployment.serviceManager,
                 operatorSetIds
             );
             vm.stopPrank();
         }
-
     }
 }
 

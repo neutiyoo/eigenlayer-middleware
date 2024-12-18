@@ -203,6 +203,7 @@ library OperatorLib {
     function registerOperatorFromAVS_OpSet(
         Operator memory operator,
         address allocationManager,
+        address registryCoordinator,
         address avs,
         uint32[] memory operatorSetIds
     ) internal {
@@ -210,26 +211,23 @@ library OperatorLib {
         bytes memory registrationParamsData;
         IAllocationManager allocationManagerInstance = IAllocationManager(allocationManager);
 
-        // Create BLS pubkey registration params
+
+        // Get the pubkey registration message hash that needs to be signed
+        bytes32 pubkeyRegistrationMessageHash = RegistryCoordinator(registryCoordinator).calculatePubkeyRegistrationMessageHash(operator.key.addr);
+
+        // Sign the pubkey registration message hash
+        BN254.G1Point memory signature = signMessage(operator.signingKey, pubkeyRegistrationMessageHash);
+
         IBLSApkRegistry.PubkeyRegistrationParams memory blsParams = IBLSApkRegistry.PubkeyRegistrationParams({
             pubkeyG1: operator.signingKey.publicKeyG1,
             pubkeyG2: operator.signingKey.publicKeyG2,
-            pubkeyRegistrationSignature: operator.signingKey.publicKeyG1
+            pubkeyRegistrationSignature: signature
         });
 
-        // Get the pubkey registration message hash that needs to be signed
-        BN254.G1Point memory pubkeyRegistrationMessageHash = BN254.hashToG1(
-            keccak256(abi.encodePacked(operator.key.addr))
-        );
 
-        // Sign the pubkey registration message hash
-        BN254.G1Point memory signature = signMessage(operator.signingKey, keccak256(abi.encodePacked(operator.key.addr)));
-
-        // Encode the registration data for the registry coordinator
         registrationParamsData = abi.encode(
-            blsParams,
-            pubkeyRegistrationMessageHash,
-            signature
+            "test-socket", // Random socket string
+            blsParams
         );
 
         IAllocationManagerTypes.RegisterParams memory params = IAllocationManagerTypes.RegisterParams({
