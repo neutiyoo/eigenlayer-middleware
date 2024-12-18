@@ -180,6 +180,36 @@ contract OperatorLibTest is Test {
             );
             vm.stopPrank();
         }
+
+        // Fast forward 10 blocks
+        vm.roll(block.number + 10);
+
+        // Get all registered operators and sort them
+        address[][] memory registeredOperators = new address[][](1);
+        registeredOperators[0] = new address[](5);
+        for (uint256 i = 0; i < 5; i++) {
+            registeredOperators[0][i] = operators[i].key.addr;
+        }
+
+        // Sort operator addresses in ascending order
+        for (uint256 i = 0; i < registeredOperators[0].length - 1; i++) {
+            for (uint256 j = 0; j < registeredOperators[0].length - i - 1; j++) {
+                if (registeredOperators[0][j] > registeredOperators[0][j + 1]) {
+                    address temp = registeredOperators[0][j];
+                    registeredOperators[0][j] = registeredOperators[0][j + 1];
+                    registeredOperators[0][j + 1] = temp;
+                }
+            }
+        }
+
+        // Update operators for quorum 1
+        bytes memory quorumNumbers = new bytes(1);
+        quorumNumbers[0] = bytes1(uint8(1)); // Quorum 1
+
+        vm.prank(middlewareConfig.admin);
+        RegistryCoordinator(middlewareDeployment.registryCoordinator).updateOperatorsForQuorum(
+            registeredOperators,
+            quorumNumbers
+        );
     }
 }
-
