@@ -172,7 +172,7 @@ library OperatorLib {
         address avsDirectory,
         address serviceManager,
         address registryCoordinator,
-        bytes calldata quorumNumbers,
+        bytes memory quorumNumbers,
         string memory socket
     ) internal {
         IAVSDirectory avsDirectoryInstance = IAVSDirectory(avsDirectory);
@@ -187,7 +187,17 @@ library OperatorLib {
         );
 
         bytes memory signature = signWithOperatorKey(operator, operatorRegistrationDigestHash);
-        IBLSApkRegistry.PubkeyRegistrationParams memory params;
+        // Get the pubkey registration message hash that needs to be signed
+        bytes32 pubkeyRegistrationMessageHash = registryCoordinatorInstance.calculatePubkeyRegistrationMessageHash(operator.key.addr);
+
+        // Sign the pubkey registration message hash
+        BN254.G1Point memory blsSig = signMessage(operator.signingKey, pubkeyRegistrationMessageHash);
+
+        IBLSApkRegistry.PubkeyRegistrationParams memory params = IBLSApkRegistry.PubkeyRegistrationParams({
+            pubkeyG1: operator.signingKey.publicKeyG1,
+            pubkeyG2: operator.signingKey.publicKeyG2,
+            pubkeyRegistrationSignature: blsSig
+        });
 
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature = ISignatureUtils
             .SignatureWithSaltAndExpiry({signature: signature, salt: salt, expiry: expiry});
@@ -256,6 +266,27 @@ library OperatorLib {
 
         // Deregister the operator in the Allocation Manager
         allocationManagerInstance.deregisterFromOperatorSets(params);
+    }
+
+    function setAllocationDelay(
+        Operator memory operator,
+        address allocationManager,
+        uint32 delay
+    ) internal {
+        IAllocationManager allocationManagerInstance = IAllocationManager(allocationManager);
+
+        // Set the allocation delay for the operator
+        allocationManagerInstance.setAllocationDelay(operator.key.addr, delay);
+    }
+
+    function modifyOperatorAllocations(
+        Operator memory operator,
+        address allocationManager,
+        IAllocationManagerTypes.AllocateParams[] memory params
+    ) internal {
+        IAllocationManager allocationManagerInstance = IAllocationManager(allocationManager);
+
+        allocationManagerInstance.modifyAllocations(operator.key.addr, params);
     }
 
     function createAndAddOperator(uint256 salt) internal returns (Operator memory) {
