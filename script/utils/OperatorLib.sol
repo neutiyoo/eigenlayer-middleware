@@ -137,7 +137,7 @@ library OperatorLib {
     }
 
     function depositTokenIntoStrategy(
-        Operator memory operator,
+        Operator memory,
         address strategyManager,
         address strategy,
         address token,
