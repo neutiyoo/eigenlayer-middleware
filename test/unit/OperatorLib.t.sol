@@ -9,7 +9,13 @@ import {UpgradeableProxyLib} from "../../script/utils/UpgradeableProxyLib.sol";
 import {MiddlewareDeploymentLib} from "../../script/utils/MiddlewareDeploymentLib.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
 import {IDelegationManager} from "../../lib/eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import {IAllocationManagerTypes} from "../../lib/eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {IStrategy} from "../../lib/eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
+import {IStakeRegistry, StakeType} from "../../src/interfaces/IStakeRegistry.sol";
+import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
+import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
+import { OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 
 
 contract OperatorLibTest is Test {
@@ -122,6 +128,56 @@ contract OperatorLibTest is Test {
         for (uint256 i = 0; i < 5; i++) {
             uint256 shares = IStrategy(middlewareDeployment.strategy).shares(operators[i].key.addr);
             assertEq(shares, mintAmount, "Operator shares should equal deposit amount");
+        }
+
+        IAllocationManagerTypes.CreateSetParams[] memory params = new IAllocationManagerTypes.CreateSetParams[](1);
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = IStrategy(middlewareDeployment.strategy);
+        params[0] = IAllocationManagerTypes.CreateSetParams({
+            operatorSetId: 0,
+            strategies: strategies
+        });
+        // Migrate AVS to operator sets
+        vm.startPrank(middlewareConfig.admin);
+
+        // Enable operator sets
+        RegistryCoordinator(middlewareDeployment.registryCoordinator).enableOperatorSets();
+
+        // Create quorum for non-slashable stake
+        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator.OperatorSetParam({
+            maxOperatorCount: 10,
+            kickBIPsOfOperatorStake: 100, // 1%
+            kickBIPsOfTotalStake: 100 // 1%
+        });
+
+        IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistry.StrategyParams({
+            strategy: IStrategy(middlewareDeployment.strategy),
+            multiplier: 1 ether
+        });
+
+        RegistryCoordinator(middlewareDeployment.registryCoordinator).createTotalDelegatedStakeQuorum(
+            operatorSetParams,
+            100 ether, // Minimum stake of 100 tokens
+            strategyParams
+        );
+
+        vm.stopPrank();
+
+        // Register operators to AVS through AllocationManager
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = 1; // First operator set
+
+        // Register each operator to the AVS through AllocationManager
+        for (uint256 i = 0; i < 5; i++) {
+            vm.startPrank(operators[i].key.addr);
+            OperatorLib.registerOperatorFromAVS_OpSet(
+                operators[i],
+                coreDeployment.allocationManager,
+                middlewareDeployment.serviceManager,
+                operatorSetIds
+            );
+            vm.stopPrank();
         }
 
     }

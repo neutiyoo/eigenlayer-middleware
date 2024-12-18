@@ -204,16 +204,38 @@ library OperatorLib {
         Operator memory operator,
         address allocationManager,
         address avs,
-        uint32[] calldata operatorSetIds,
-        bytes calldata data
+        uint32[] memory operatorSetIds
     ) internal {
+
+        bytes memory registrationParamsData;
         IAllocationManager allocationManagerInstance = IAllocationManager(allocationManager);
 
-        /// TODO: Create data for registry Coordinator
+        // Create BLS pubkey registration params
+        IBLSApkRegistry.PubkeyRegistrationParams memory blsParams = IBLSApkRegistry.PubkeyRegistrationParams({
+            pubkeyG1: operator.signingKey.publicKeyG1,
+            pubkeyG2: operator.signingKey.publicKeyG2,
+            pubkeyRegistrationSignature: operator.signingKey.publicKeyG1
+        });
+
+        // Get the pubkey registration message hash that needs to be signed
+        BN254.G1Point memory pubkeyRegistrationMessageHash = BN254.hashToG1(
+            keccak256(abi.encodePacked(operator.key.addr))
+        );
+
+        // Sign the pubkey registration message hash
+        BN254.G1Point memory signature = signMessage(operator.signingKey, keccak256(abi.encodePacked(operator.key.addr)));
+
+        // Encode the registration data for the registry coordinator
+        registrationParamsData = abi.encode(
+            blsParams,
+            pubkeyRegistrationMessageHash,
+            signature
+        );
+
         IAllocationManagerTypes.RegisterParams memory params = IAllocationManagerTypes.RegisterParams({
             avs: avs,
             operatorSetIds: operatorSetIds,
-            data: data
+            data: registrationParamsData
         });
 
         // Register the operator in the Allocation Manager
