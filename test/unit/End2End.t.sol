@@ -20,7 +20,7 @@ import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
 
 
 
-contract OperatorLibTest is Test {
+contract End2EndTest is Test {
     using OperatorLib for *;
 
     function testCreateOperator() public {
