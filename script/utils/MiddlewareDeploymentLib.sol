@@ -22,14 +22,10 @@ import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import {IStrategyFactory} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyFactory.sol";
 import {ServiceManagerMock} from "../../test/mocks/ServiceManagerMock.sol";
-
-
 import {PauserRegistry, IPauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
-
 import {UpgradeableProxyLib} from "./UpgradeableProxyLib.sol";
 import {CoreDeploymentLib} from "./CoreDeploymentLib.sol";
-
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -67,32 +63,41 @@ library MiddlewareDeploymentLib {
         uint256[] operatorParams;
     }
 
+    struct ImplementationAddresses {
+        address serviceManagerImpl;
+        address stakeRegistryImpl;
+        address blsApkRegistryImpl;
+        address indexRegistryImpl;
+        address registryCoordinatorImpl;
+    }
+
+    struct QuorumParams {
+        IRegistryCoordinator.OperatorSetParam[] quorumsOperatorSetParams;
+        uint96[] quorumsMinimumStake;
+        IStakeRegistry.StrategyParams[][] quorumsStrategyParams;
+    }
+
     function deployContracts(
         CoreDeploymentLib.DeploymentData memory core,
         ConfigData memory config
     ) internal returns (DeploymentData memory) {
         DeploymentData memory result;
-        address[] memory pausers = new address[](2);
-        pausers[0] = config.admin;
-        pausers[1] = config.admin;
-        PauserRegistry pausercontract = new PauserRegistry(pausers, config.admin);
-        result.pauserRegistry = address(pausercontract);
+
+        // Deploy pauser registry
+        result.pauserRegistry = _deployPauserRegistry(config.admin);
+
+        // Deploy proxies
         result.stakeRegistry = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
         result.registryCoordinator = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
         result.blsapkRegistry = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
         result.indexRegistry = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
         result.serviceManager = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
-        OperatorStateRetriever operatorStateRetriever = new OperatorStateRetriever();
-        result.operatorStateRetriever = address(operatorStateRetriever);
 
-        ERC20Mock token = new ERC20Mock();
-        result.token = address(token);
+        // Deploy operator state retriever
+        result.operatorStateRetriever = address(new OperatorStateRetriever());
 
-        // Create a new strategy using the strategy factory
-        IStrategyFactory strategyFactory = IStrategyFactory(core.strategyFactory);
-        IStrategy strategy = strategyFactory.deployNewStrategy(IERC20(result.token));
-        result.strategy = address(strategy);
-        result.token = address(token);
+        // Deploy token and strategy
+        (result.token, result.strategy) = _deployTokenAndStrategy(core.strategyFactory);
 
         return result;
     }
@@ -102,8 +107,42 @@ library MiddlewareDeploymentLib {
         ConfigData memory config,
         CoreDeploymentLib.DeploymentData memory core
     ) internal {
+        // Deploy implementation contracts
+        ImplementationAddresses memory impls = _deployImplementations(deployment, core);
 
-        address serviceManagerImpl = address(
+        // Prepare upgrade data
+        (
+            bytes memory registryCoordinatorUpgradeCall,
+            bytes memory serviceManagerUpgradeCall
+        ) = _prepareUpgradeCalls(deployment, config);
+
+        // Execute upgrades
+        _executeUpgrades(
+            deployment,
+            impls,
+            registryCoordinatorUpgradeCall,
+            serviceManagerUpgradeCall
+        );
+    }
+
+    function _deployPauserRegistry(address admin) private returns (address) {
+        address[] memory pausers = new address[](2);
+        pausers[0] = admin;
+        pausers[1] = admin;
+        return address(new PauserRegistry(pausers, admin));
+    }
+
+    function _deployTokenAndStrategy(address strategyFactory) private returns (address token, address strategy) {
+        ERC20Mock tokenContract = new ERC20Mock();
+        token = address(tokenContract);
+        strategy = address(IStrategyFactory(strategyFactory).deployNewStrategy(IERC20(token)));
+    }
+
+    function _deployImplementations(
+        DeploymentData memory deployment,
+        CoreDeploymentLib.DeploymentData memory core
+    ) private returns (ImplementationAddresses memory impls) {
+        impls.serviceManagerImpl = address(
             new ServiceManagerMock(
                 IAVSDirectory(core.avsDirectory),
                 IRewardsCoordinator(core.rewardsCoordinator),
@@ -112,7 +151,8 @@ library MiddlewareDeploymentLib {
                 IAllocationManager(core.allocationManager)
             )
         );
-        address stakeRegistryImpl = address(
+
+        impls.stakeRegistryImpl = address(
             new StakeRegistry(
                 IRegistryCoordinator(deployment.registryCoordinator),
                 IDelegationManager(core.delegationManager),
@@ -121,9 +161,10 @@ library MiddlewareDeploymentLib {
             )
         );
 
-        address blsApkRegistryImpl = address(new BLSApkRegistry(IRegistryCoordinator(deployment.registryCoordinator)));
-        address indexRegistryimpl = address(new IndexRegistry(IRegistryCoordinator(deployment.registryCoordinator)));
-        address registryCoordinatorImpl = address(
+        impls.blsApkRegistryImpl = address(new BLSApkRegistry(IRegistryCoordinator(deployment.registryCoordinator)));
+        impls.indexRegistryImpl = address(new IndexRegistry(IRegistryCoordinator(deployment.registryCoordinator)));
+
+        impls.registryCoordinatorImpl = address(
             new RegistryCoordinator(
                 IServiceManager(deployment.serviceManager),
                 IStakeRegistry(deployment.stakeRegistry),
@@ -133,65 +174,79 @@ library MiddlewareDeploymentLib {
                 IPauserRegistry(deployment.pauserRegistry)
             )
         );
+    }
 
+    function _prepareUpgradeCalls(
+        DeploymentData memory deployment,
+        ConfigData memory config
+    ) private pure returns (bytes memory registryCoordinatorUpgradeCall, bytes memory serviceManagerUpgradeCall) {
         IStrategy[1] memory deployedStrategyArray = [IStrategy(deployment.strategy)];
-        uint256 numStrategies = deployedStrategyArray.length;
 
-        uint256 numQuorums = config.numQuorums;
-        IRegistryCoordinator.OperatorSetParam[] memory quorumsOperatorSetParams =
-            new IRegistryCoordinator.OperatorSetParam[](numQuorums);
-        uint256[] memory operator_params = config.operatorParams;
+        QuorumParams memory params = _prepareQuorumParams(config, deployedStrategyArray);
 
-        for (uint256 i = 0; i < numQuorums; i++) {
-            quorumsOperatorSetParams[i] = IRegistryCoordinator.OperatorSetParam({
-                maxOperatorCount: uint32(operator_params[i]),
-                kickBIPsOfOperatorStake: uint16(operator_params[i + 1]),
-                kickBIPsOfTotalStake: uint16(operator_params[i + 2])
-            });
-        }
-
-        uint96[] memory quorumsMinimumStake = new uint96[](numQuorums);
-        IStakeRegistry.StrategyParams[][] memory quorumsStrategyParams =
-            new IStakeRegistry.StrategyParams[][](numQuorums);
-        for (uint256 i = 0; i < numQuorums; i++) {
-            quorumsStrategyParams[i] = new IStakeRegistry.StrategyParams[](numStrategies);
-            for (uint256 j = 0; j < numStrategies; j++) {
-                quorumsStrategyParams[i][j] = IStakeRegistry.StrategyParams({
-                    strategy: deployedStrategyArray[j],
-                    multiplier: 1 ether
-                });
-            }
-        }
-
-        bytes memory registryCoordinatorUpgradeCall = abi.encodeCall(
+        registryCoordinatorUpgradeCall = abi.encodeCall(
             RegistryCoordinator.initialize,
             (
                 config.admin,
                 config.admin,
                 config.admin,
                 uint256(0),
-                quorumsOperatorSetParams,
-                quorumsMinimumStake,
-                quorumsStrategyParams,
+                params.quorumsOperatorSetParams,
+                params.quorumsMinimumStake,
+                params.quorumsStrategyParams,
                 new StakeType[](1),
                 new uint32[](1)
             )
         );
 
-        bytes memory serviceManagerUpgradeCall = abi.encodeCall(
+        serviceManagerUpgradeCall = abi.encodeCall(
             ServiceManagerMock.initialize,
-            (
-                config.admin,
-                config.admin,
-                config.admin
-            )
+            (config.admin, config.admin, config.admin)
         );
-
-        UpgradeableProxyLib.upgradeAndCall(deployment.serviceManager, serviceManagerImpl, serviceManagerUpgradeCall);
-        UpgradeableProxyLib.upgrade(deployment.stakeRegistry, stakeRegistryImpl);
-        UpgradeableProxyLib.upgrade(deployment.blsapkRegistry, blsApkRegistryImpl);
-        UpgradeableProxyLib.upgrade(deployment.indexRegistry, indexRegistryimpl);
-        UpgradeableProxyLib.upgradeAndCall(deployment.registryCoordinator, registryCoordinatorImpl, registryCoordinatorUpgradeCall);
     }
 
+    function _prepareQuorumParams(
+        ConfigData memory config,
+        IStrategy[1] memory deployedStrategyArray
+    ) private pure returns (QuorumParams memory params) {
+        uint256 numQuorums = config.numQuorums;
+        uint256 numStrategies = deployedStrategyArray.length;
+
+        params.quorumsOperatorSetParams = new IRegistryCoordinator.OperatorSetParam[](numQuorums);
+        uint256[] memory operator_params = config.operatorParams;
+
+        for (uint256 i = 0; i < numQuorums; i++) {
+            params.quorumsOperatorSetParams[i] = IRegistryCoordinator.OperatorSetParam({
+                maxOperatorCount: uint32(operator_params[i]),
+                kickBIPsOfOperatorStake: uint16(operator_params[i + 1]),
+                kickBIPsOfTotalStake: uint16(operator_params[i + 2])
+            });
+        }
+
+        params.quorumsMinimumStake = new uint96[](numQuorums);
+        params.quorumsStrategyParams = new IStakeRegistry.StrategyParams[][](numQuorums);
+
+        for (uint256 i = 0; i < numQuorums; i++) {
+            params.quorumsStrategyParams[i] = new IStakeRegistry.StrategyParams[](numStrategies);
+            for (uint256 j = 0; j < numStrategies; j++) {
+                params.quorumsStrategyParams[i][j] = IStakeRegistry.StrategyParams({
+                    strategy: deployedStrategyArray[j],
+                    multiplier: 1 ether
+                });
+            }
+        }
+    }
+
+    function _executeUpgrades(
+        DeploymentData memory deployment,
+        ImplementationAddresses memory impls,
+        bytes memory registryCoordinatorUpgradeCall,
+        bytes memory serviceManagerUpgradeCall
+    ) private {
+        UpgradeableProxyLib.upgradeAndCall(deployment.serviceManager, impls.serviceManagerImpl, serviceManagerUpgradeCall);
+        UpgradeableProxyLib.upgrade(deployment.stakeRegistry, impls.stakeRegistryImpl);
+        UpgradeableProxyLib.upgrade(deployment.blsapkRegistry, impls.blsApkRegistryImpl);
+        UpgradeableProxyLib.upgrade(deployment.indexRegistry, impls.indexRegistryImpl);
+        UpgradeableProxyLib.upgradeAndCall(deployment.registryCoordinator, impls.registryCoordinatorImpl, registryCoordinatorUpgradeCall);
+    }
 }
