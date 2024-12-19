@@ -14,7 +14,7 @@ contract DeployMiddleware is Script {
     address internal deployer;
 
     function setUp() public {
-        deployer = vm.rememberKey(vm.envUint("PRIVATE_KEY"));
+        deployer = vm.rememberKey(vm.envUint("HOLESKY_PRIVATE_KEY"));
         vm.label(deployer, "Deployer");
 
         // Read core deployment data from json
@@ -51,11 +51,14 @@ contract DeployMiddleware is Script {
 
     function logDeploymentDetails(MiddlewareDeploymentLib.DeploymentData memory result) internal pure {
         console.log("Deployment completed");
+        console.log("ServiceManager:", result.serviceManager);
         console.log("RegistryCoordinator:", result.registryCoordinator);
         console.log("BLSApkRegistry:", result.blsapkRegistry);
         console.log("IndexRegistry:", result.indexRegistry);
         console.log("StakeRegistry:", result.stakeRegistry);
         console.log("OperatorStateRetriever:", result.operatorStateRetriever);
+        console.log("Token:", result.token);
+        console.log("Strategy:", result.strategy);
     }
 
         function labelContracts(CoreDeploymentLib.DeploymentData memory coreData, MiddlewareDeploymentLib.DeploymentData memory middlewareData) internal {
