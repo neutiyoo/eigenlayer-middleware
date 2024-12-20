@@ -22,6 +22,7 @@ contract TestRewardsV2 is Script {
     address OPERATOR_XYZ = 0x758E016468E5E90cDB42e743881C2e921d8e7bF8;
     address OPERATOR_GALAXY = 0x0a3e3d83C99B27cA7540720b54105C79Cd58dbdD;
     address OPERATOR_SINOPMM = 0xB25430A1Ba8F2033834Ba30AAB8279CB1Cb6c9a6;
+    address OPERATOR_EIGENLABS = 0x5f8C207382426D3f7F248E6321Cf93B34e66d6b9;
 
     //strategies
     IStrategy STRATEGY_WETH =
@@ -509,6 +510,45 @@ contract TestRewardsV2 is Script {
                 operatorRewards: operatorRewards,
                 startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
                 duration: uint32(518400), // 6 days
+                description: ""
+            });
+
+        vm.startBroadcast();
+        WETH.approve(address(eigenDAServiceManager), totalAmount);
+        eigenDAServiceManager.createOperatorDirectedAVSRewardsSubmission(
+            rewardsSubmissions
+        );
+        vm.stopBroadcast();
+    }
+
+    // Test Operator Directed Rewards Submission: Dust payment of 60 wei over 6 days duration
+    // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_14()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
+    function tx_14() public {
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory strategyAndMultipliers = _setupStrategyAndMultiplier();
+
+        IRewardsCoordinator.OperatorReward[]
+            memory operatorRewards = new IRewardsCoordinator.OperatorReward[](
+                1
+            );
+        operatorRewards[0] = IRewardsCoordinator.OperatorReward({
+            operator: OPERATOR_EIGENLABS,
+            amount: 0.8e18 // 0.8 WETH
+        });
+
+        uint256 totalAmount = _calculateTotalAmount(operatorRewards);
+
+        IRewardsCoordinator.OperatorDirectedRewardsSubmission[]
+            memory rewardsSubmissions = new IRewardsCoordinator.OperatorDirectedRewardsSubmission[](
+                1
+            );
+        rewardsSubmissions[0] = IRewardsCoordinator
+            .OperatorDirectedRewardsSubmission({
+                strategiesAndMultipliers: strategyAndMultipliers,
+                token: WETH,
+                operatorRewards: operatorRewards,
+                startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
+                duration: uint32(864000), // 10 days
                 description: ""
             });
 
