@@ -533,7 +533,7 @@ contract TestRewardsV2 is Script {
             );
         operatorRewards[0] = IRewardsCoordinator.OperatorReward({
             operator: OPERATOR_EIGENLABS,
-            amount: 0.8e18 // 0.8 WETH
+            amount: 0.9e18 // 0.9 WETH
         });
 
         uint256 totalAmount = _calculateTotalAmount(operatorRewards);
@@ -548,7 +548,7 @@ contract TestRewardsV2 is Script {
                 token: WETH,
                 operatorRewards: operatorRewards,
                 startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
-                duration: uint32(864000), // 10 days
+                duration: uint32(950400), // 11 days
                 description: ""
             });
 
