@@ -521,7 +521,7 @@ contract TestRewardsV2 is Script {
         vm.stopBroadcast();
     }
 
-    // Test Operator Directed Rewards Submission: Dust payment of 60 wei over 6 days duration
+    // Test Operator Directed Rewards Submission: 1. Edge case commissions of 0 and 10000 bips. 2. Two split setting in the same day.
     // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_14()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
     function tx_14() public {
         IRewardsCoordinator.StrategyAndMultiplier[]
@@ -557,6 +557,32 @@ contract TestRewardsV2 is Script {
         eigenDAServiceManager.createOperatorDirectedAVSRewardsSubmission(
             rewardsSubmissions
         );
+        vm.stopBroadcast();
+    }
+
+    // Test Rewards v1 Submission: 1. Edge case commissions of 0 and 10000 bips. 2. Two split setting in the same day.
+    // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_15()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
+    function tx_15() public {
+        IRewardsCoordinator.StrategyAndMultiplier[]
+            memory strategyAndMultipliers = _setupStrategyAndMultiplier();
+
+        uint256 amount = 1e18; // 1 WETH
+
+        IRewardsCoordinator.RewardsSubmission[]
+            memory rewardsSubmissions = new IRewardsCoordinator.RewardsSubmission[](
+                1
+            );
+        rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
+            strategiesAndMultipliers: strategyAndMultipliers,
+            token: WETH,
+            amount: amount,
+            startTimestamp: uint32(1733788800), // 2024-12-10 00:00:00 UTC
+            duration: uint32(950400) // 11 days
+        });
+
+        vm.startBroadcast();
+        WETH.approve(address(eigenDAServiceManager), amount);
+        eigenDAServiceManager.createAVSRewardsSubmission(rewardsSubmissions);
         vm.stopBroadcast();
     }
 }
