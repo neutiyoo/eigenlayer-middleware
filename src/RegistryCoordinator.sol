@@ -115,6 +115,8 @@ contract RegistryCoordinator is
         registries.push(address(blsApkRegistry));
         registries.push(address(indexRegistry));
 
+        _enableOperatorSets();
+
         // Create quorums
         for (uint256 i = 0; i < _operatorSetParams.length; i++) {
             _createQuorum(_operatorSetParams[i], _minimumStakes[i], _strategyParams[i], _stakeTypes[i], _lookAheadPeriods[i]);
@@ -278,21 +280,7 @@ contract RegistryCoordinator is
     }
 
     function enableOperatorSets() external onlyOwner {
-        /// Triggers the updates to use operator sets ie setsAVSRegistrar
-        /// Opens up the AVS Registrar Hooks on this contract to be callable by the ALM
-        /// Allows creation of quorums with slashable and total delegated stake for operator sets
-        /// Sets all quorums created before this call as m2 quorums in a mapping so that we can gate function calls to deregister
-        /// M2 Registrations turn off once migrated.  M2 deregistration remain open for only m2 quorums
-        // Set this contract as the AVS registrar in the service manager
-        serviceManager.setAVSRegistrar(IAVSRegistrar(address(this)));
-
-        // Set all existing quorums as m2 quorums
-        for (uint8 i = 0; i < quorumCount; i++) {
-            isM2Quorum[i] = true;
-        }
-
-        // Enable operator sets mode
-        isOperatorSetAVS = true;
+        _enableOperatorSets();
     }
 
     function registerOperator(
@@ -921,6 +909,27 @@ contract RegistryCoordinator is
             churnApproverSignature.signature
         );
     }
+
+    function _enableOperatorSets() internal {
+        // TODO: cleanup
+        require(!isOperatorSetAVS, "Operator sets already enabled");
+        /// Triggers the updates to use operator sets ie setsAVSRegistrar
+        /// Opens up the AVS Registrar Hooks on this contract to be callable by the ALM
+        /// Allows creation of quorums with slashable and total delegated stake for operator sets
+        /// Sets all quorums created before this call as m2 quorums in a mapping so that we can gate function calls to deregister
+        /// M2 Registrations turn off once migrated.  M2 deregistration remain open for only m2 quorums
+        // Set this contract as the AVS registrar in the service manager
+        serviceManager.setAVSRegistrar(IAVSRegistrar(address(this)));
+
+        // Set all existing quorums as m2 quorums
+        for (uint8 i = 0; i < quorumCount; i++) {
+            isM2Quorum[i] = true;
+        }
+
+        // Enable operator sets mode
+        isOperatorSetAVS = true;
+    }
+
 
     /**
      * @notice Creates a quorum and initializes it in each registry contract

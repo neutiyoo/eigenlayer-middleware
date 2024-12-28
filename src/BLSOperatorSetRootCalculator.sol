@@ -21,13 +21,13 @@ contract BLSOperatorSetRootCalculator is IOperatorSetRootCalculator {
     IDelegationManager public immutable delegationManager;
     IAllocationManager public immutable allocationManager;
 
-    IBLSApkRegistry public immutable blsApkRegistry;
     IStakeRegistry public immutable stakeRegistry;
+    IBLSApkRegistry public immutable blsApkRegistry;
 
     constructor(
         IAllocationManager _allocationManager,
-        IStakeRegistry _stakeRegistry,
         IDelegationManager _delegationManager,
+        IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry
     ) {
         allocationManager = _allocationManager;
@@ -41,7 +41,7 @@ contract BLSOperatorSetRootCalculator is IOperatorSetRootCalculator {
 	 * @param operatorSet the operatorSet to get the operatorSetRoot for
 	 * @return the operatorSetRoot
 	 */
-	function getOperatorLeaves(
+	function getOperatorSetRoot(
 		OperatorSet calldata operatorSet
 	) external view returns(bytes32) {
         // Get operators
@@ -56,32 +56,44 @@ contract BLSOperatorSetRootCalculator is IOperatorSetRootCalculator {
         }
 
         // Get delegated stake
-        uint256[][] memory delegatedStake = delegationManager.getOperatorsShares(operators, strategies);
+        uint256[][] memory delegatedStakes = delegationManager.getOperatorsShares(operators, strategies);
         // Get slashable stake
-        uint256[][] memory slashableStake = allocationManager.getMinimumSlashableStake(operatorSet, operators, strategies, uint32(block.number + 14 days / 12 seconds));
+        uint256[][] memory slashableStakes = allocationManager.getMinimumSlashableStake(operatorSet, operators, strategies, uint32(block.number + 14 days / 12 seconds));
         // Get pubkey hashes    
         BN254.G1Point[] memory pubkeys = new BN254.G1Point[](operators.length);
         for (uint256 i = 0; i < operators.length; i++) {
             (pubkeys[i], ) = blsApkRegistry.getRegisteredPubkey(operators[i]);
         }
 
+        // keep track of totals
         uint256 totalDelegatedStake = 0;
         uint256 totalSlashableStake = 0;
         BN254.G1Point memory aggPubkey = BN254.G1Point(0, 0);
+
+        // operator specific values
+        uint256 delegatedStake = 0;
+        uint256 slashableStake = 0;
+
         // Get operator leaves
         bytes32[] memory leaves = new bytes32[](operators.length);
         for (uint256 i = 0; i < operators.length; i++) {
+            // get operator specific values
+            for (uint256 j = 0; j < strategies.length; j++) {
+                delegatedStake += delegatedStakes[i][j] * strategyParams[j].multiplier;
+                slashableStake += slashableStakes[i][j] * strategyParams[j].multiplier;
+            }
+
             // add to totals
-            totalDelegatedStake += delegatedStake[i][operatorSet.id];
-            totalSlashableStake += slashableStake[i][operatorSet.id];
+            totalDelegatedStake += delegatedStake;
+            totalSlashableStake += slashableStake;
             aggPubkey = aggPubkey.plus(pubkeys[i]);
 
             // get operator leaf
             leaves[i] = keccak256(abi.encodePacked(
-                totalDelegatedStake,
-                totalSlashableStake,
-                aggPubkey.X,
-                aggPubkey.Y
+                delegatedStake,
+                slashableStake,
+                pubkeys[i].X,
+                pubkeys[i].Y
             ));
         }
 

@@ -239,6 +239,12 @@ contract DelegationIntermediate is IDelegationManager {
     ) external virtual {}
 
     function minWithdrawalDelayBlocks() external view virtual override returns (uint32) {}
+
+    function convertToDepositShares(
+        address staker,
+        IStrategy[] memory strategies,
+        uint256[] memory withdrawableShares
+    ) external view virtual override returns (uint256[] memory) {}
 }
 
 contract DelegationMock is DelegationIntermediate {
@@ -268,5 +274,12 @@ contract DelegationMock is DelegationIntermediate {
     }
     function minWithdrawalDelayBlocks() external view override returns (uint32){
         return 10000;
+    }
+    function convertToDepositShares(
+        address staker,
+        IStrategy[] memory strategies,
+        uint256[] memory withdrawableShares
+    ) external view override returns (uint256[] memory) {
+        return withdrawableShares;
     }
 }

@@ -9,7 +9,7 @@ interface IOperatorSetRootCalculator {
 	 * @param operatorSet the operatorSet to get the operatorSetRoot for
 	 * @return the operatorSetRoot
 	 */
-	function getOperatorLeaves(
+	function getOperatorSetRoot(
 		OperatorSet calldata operatorSet
 	) external view returns(bytes32);
 }

@@ -30,7 +30,9 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ERC20Mock is ERC20 {
-    constructor() ERC20("", "") {}
+    constructor() ERC20("", "") {
+        _mint(msg.sender, 1e10 ether);
+    }
 
     function mint(address account, uint256 amount) public {
         _mint(account, amount);
@@ -51,16 +53,22 @@ library MiddlewareDeploymentLib {
         address blsapkRegistry;
         address indexRegistry;
         address stakeRegistry;
-        address strategy;
-        address token;
+        
         address pauserRegistry;
+
+        IStrategy[] strategies;
+        IERC20[] tokens;
     }
 
     struct ConfigData {
         address proxyAdmin;
         address admin;
         uint256 numQuorums;
+        uint256 numStrategies;
         uint256[] operatorParams;
+        uint256[] numOperators;
+
+        bool enableOperatorSets;
     }
 
     struct ImplementationAddresses {
@@ -97,7 +105,11 @@ library MiddlewareDeploymentLib {
         result.operatorStateRetriever = address(new OperatorStateRetriever());
 
         // Deploy token and strategy
-        (result.token, result.strategy) = _deployTokenAndStrategy(core.strategyFactory);
+        result.tokens = new IERC20[](config.numStrategies);
+        result.strategies = new IStrategy[](config.numStrategies);
+        for (uint256 i = 0; i < config.numStrategies; i++) {
+            (result.tokens[i], result.strategies[i]) = _deployTokenAndStrategy(core.strategyFactory);
+        }
 
         return result;
     }
@@ -132,10 +144,10 @@ library MiddlewareDeploymentLib {
         return address(new PauserRegistry(pausers, admin));
     }
 
-    function _deployTokenAndStrategy(address strategyFactory) private returns (address token, address strategy) {
+    function _deployTokenAndStrategy(address strategyFactory) private returns (IERC20 token, IStrategy strategy) {
         ERC20Mock tokenContract = new ERC20Mock();
-        token = address(tokenContract);
-        strategy = address(IStrategyFactory(strategyFactory).deployNewStrategy(IERC20(token)));
+        token = IERC20(address(tokenContract));
+        strategy = IStrategy(IStrategyFactory(strategyFactory).deployNewStrategy(token));
     }
 
     function _deployImplementations(
@@ -180,9 +192,13 @@ library MiddlewareDeploymentLib {
         DeploymentData memory deployment,
         ConfigData memory config
     ) private pure returns (bytes memory registryCoordinatorUpgradeCall, bytes memory serviceManagerUpgradeCall) {
-        IStrategy[1] memory deployedStrategyArray = [IStrategy(deployment.strategy)];
+        QuorumParams memory params = _prepareQuorumParams(config, deployment);
 
-        QuorumParams memory params = _prepareQuorumParams(config, deployedStrategyArray);
+        // all slashable strategies
+        StakeType[] memory slashableStakeTypes = new StakeType[](config.numQuorums);
+        for (uint256 i = 0; i < config.numQuorums; i++) {
+            slashableStakeTypes[i] = StakeType.TOTAL_SLASHABLE;
+        }
 
         registryCoordinatorUpgradeCall = abi.encodeCall(
             RegistryCoordinator.initialize,
@@ -194,7 +210,7 @@ library MiddlewareDeploymentLib {
                 params.quorumsOperatorSetParams,
                 params.quorumsMinimumStake,
                 params.quorumsStrategyParams,
-                new StakeType[](1),
+                slashableStakeTypes,
                 new uint32[](1)
             )
         );
@@ -207,10 +223,9 @@ library MiddlewareDeploymentLib {
 
     function _prepareQuorumParams(
         ConfigData memory config,
-        IStrategy[1] memory deployedStrategyArray
+        DeploymentData memory deployment
     ) private pure returns (QuorumParams memory params) {
         uint256 numQuorums = config.numQuorums;
-        uint256 numStrategies = deployedStrategyArray.length;
 
         params.quorumsOperatorSetParams = new IRegistryCoordinator.OperatorSetParam[](numQuorums);
         uint256[] memory operator_params = config.operatorParams;
@@ -227,10 +242,10 @@ library MiddlewareDeploymentLib {
         params.quorumsStrategyParams = new IStakeRegistry.StrategyParams[][](numQuorums);
 
         for (uint256 i = 0; i < numQuorums; i++) {
-            params.quorumsStrategyParams[i] = new IStakeRegistry.StrategyParams[](numStrategies);
-            for (uint256 j = 0; j < numStrategies; j++) {
+            params.quorumsStrategyParams[i] = new IStakeRegistry.StrategyParams[](deployment.strategies.length);
+            for (uint256 j = 0; j < deployment.strategies.length; j++) {
                 params.quorumsStrategyParams[i][j] = IStakeRegistry.StrategyParams({
-                    strategy: deployedStrategyArray[j],
+                    strategy: deployment.strategies[j],
                     multiplier: 1 ether
                 });
             }
