@@ -274,7 +274,7 @@ contract MockAVSDeployer is Test {
         }
 
         registryCoordinatorImplementation = new RegistryCoordinatorHarness(
-            serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, avsDirectory, pauserRegistry
+            serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, pauserRegistry
         );
         {
             delete operatorSetParams;
