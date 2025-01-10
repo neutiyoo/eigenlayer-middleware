@@ -235,15 +235,6 @@ contract StakeRegistry is StakeRegistryStorage {
     }
 
     /**
-     * @notice Sets the stake type for the registry for a specific quorum
-     * @param quorumNumber The quorum number to set the stake type for
-     * @param _stakeType The type of stake to track (TOTAL_DELEGATED, TOTAL_SLASHABLE, or BOTH)
-     */
-    function setStakeType(uint8 quorumNumber, StakeType _stakeType) external onlyCoordinatorOwner quorumExists(quorumNumber) {
-        _setStakeType(quorumNumber, _stakeType);
-    }
-
-    /**
      * @notice Sets the look ahead time for checking operator shares for a specific quorum
      * @param quorumNumber The quorum number to set the look ahead period for
      * @param _lookAheadPeriod The number of days to look ahead when checking shares
