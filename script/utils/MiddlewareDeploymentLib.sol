@@ -170,7 +170,6 @@ library MiddlewareDeploymentLib {
                 IStakeRegistry(deployment.stakeRegistry),
                 IBLSApkRegistry(deployment.blsapkRegistry),
                 IIndexRegistry(deployment.indexRegistry),
-                IAVSDirectory(core.avsDirectory),
                 IPauserRegistry(deployment.pauserRegistry)
             )
         );
