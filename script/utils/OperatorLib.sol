@@ -207,6 +207,7 @@ library OperatorLib {
     }
 
     function deregisterOperatorFromAVS_M2(Operator memory operator, address registryCoordinator) internal {
+        vm.prank(operator.key.addr);
         RegistryCoordinator(registryCoordinator).deregisterOperator("");
     }
 
