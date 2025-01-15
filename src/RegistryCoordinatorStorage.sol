@@ -72,21 +72,24 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     /// @notice the delay in seconds before an operator can reregister after being ejected
     uint256 public ejectionCooldown;
 
+    /// @notice Whether this AVS uses operator sets for registration
+    /// @dev If true, operators must register to operator sets via the AllocationManager
     bool public isOperatorSetAVS;
+
+    /// @notice Mapping from quorum number to whether the quorum is an M2 quorum
+    /// @dev M2 quorums are pre-operator sets and track total delegated stake only
     mapping(uint8 => bool) public isM2Quorum;
 
     constructor(
         IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
-        IIndexRegistry _indexRegistry,
-        IAVSDirectory _avsDirectory
+        IIndexRegistry _indexRegistry
     ) {
         serviceManager = _serviceManager;
         stakeRegistry = _stakeRegistry;
         blsApkRegistry = _blsApkRegistry;
         indexRegistry = _indexRegistry;
-        avsDirectory = _avsDirectory;
     }
 
     // storage gap for upgradeability
