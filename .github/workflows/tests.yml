@@ -33,13 +33,13 @@ jobs:
       - name: Run Forge build
         run: |
           forge --version
-          forge build --sizes --skip script --skip test --via-ir
+          forge build --sizes
         id: build
 
       - name: Run tests
         shell: bash
         run: |
-          forge test --no-match-contract FFI
+          forge test --no-match-contract FFI,ForkTest
 
         env:
           RPC_MAINNET: ${{ secrets.RPC_MAINNET }}

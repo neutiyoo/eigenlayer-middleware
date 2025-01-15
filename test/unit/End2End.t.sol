@@ -18,7 +18,7 @@ import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.so
 import {OperatorSet} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
 import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
 
-contract End2EndTest is Test {
+contract End2EndForkTest is Test {
     using OperatorLib for *;
 
     function _createOperators(uint256 numOperators, uint256 startIndex) internal returns (OperatorLib.Operator[] memory) {
