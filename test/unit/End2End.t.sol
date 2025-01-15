@@ -70,8 +70,6 @@ contract End2EndForkTest is Test {
         assertTrue(isValid, "Signature should be valid");
     }
 
-    // ... existing code ...
-
     function testEndToEndSetup() public {
         (OperatorLib.Operator[] memory operators, CoreDeploymentLib.DeploymentData memory coreDeployment,
          MiddlewareDeploymentLib.DeploymentData memory middlewareDeployment,
