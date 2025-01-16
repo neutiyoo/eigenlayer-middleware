@@ -248,4 +248,51 @@ library MiddlewareDeploymentLib {
         UpgradeableProxyLib.upgrade(deployment.indexRegistry, impls.indexRegistryImpl);
         UpgradeableProxyLib.upgradeAndCall(deployment.registryCoordinator, impls.registryCoordinatorImpl, registryCoordinatorUpgradeCall);
     }
+
+    function upgradeContracts(
+        DeploymentData memory deployment,
+        CoreDeploymentLib.DeploymentData memory core
+    ) internal {
+        ImplementationAddresses memory impls = _deployImplementations(deployment, core);
+
+        _executeUpgrades(deployment, impls);
+    }
+
+    function _executeUpgrades(
+        DeploymentData memory deployment,
+        ImplementationAddresses memory impls
+    ) private {
+        UpgradeableProxyLib.upgrade(deployment.serviceManager, impls.serviceManagerImpl);
+        UpgradeableProxyLib.upgrade(deployment.stakeRegistry, impls.stakeRegistryImpl);
+        UpgradeableProxyLib.upgrade(deployment.blsapkRegistry, impls.blsApkRegistryImpl);
+        UpgradeableProxyLib.upgrade(deployment.indexRegistry, impls.indexRegistryImpl);
+        UpgradeableProxyLib.upgrade(deployment.registryCoordinator, impls.registryCoordinatorImpl);
+    }
+
+    function readDeploymentJson(string memory path, uint256 chainId) internal returns (DeploymentData memory) {
+        string memory filePath = string(abi.encodePacked(path, "/", vm.toString(chainId), ".json"));
+        return parseDeploymentJson(filePath);
+    }
+
+    function readDeploymentJson(string memory path, uint256 chainId, string memory environment) internal returns (DeploymentData memory) {
+        string memory filePath = string(abi.encodePacked(path, "/", vm.toString(chainId), "-", environment, ".json"));
+        return parseDeploymentJson(filePath);
+    }
+
+    function parseDeploymentJson(string memory filePath) internal returns (DeploymentData memory) {
+        string memory json = vm.readFile(filePath);
+        require(vm.exists(filePath), "Deployment file does not exist");
+        DeploymentData memory deploymentData;
+
+        deploymentData.serviceManager = json.readAddress(".serviceManager");
+        deploymentData.registryCoordinator = json.readAddress(".registryCoordinator");
+        deploymentData.blsapkRegistry = json.readAddress(".blsapkRegistry");
+        deploymentData.indexRegistry = json.readAddress(".indexRegistry");
+        deploymentData.stakeRegistry = json.readAddress(".stakeRegistry");
+        deploymentData.operatorStateRetriever = json.readAddress(".operatorStateRetriever");
+        deploymentData.token = json.readAddress(".token");
+        deploymentData.strategy = json.readAddress(".strategy");
+
+        return deploymentData;
+    }
 }
