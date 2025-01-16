@@ -14,11 +14,12 @@ contract DeployMiddleware is Script {
     address internal deployer;
 
     function setUp() public {
+        /// TODO: Right now we're only supporting pre-prod
         deployer = vm.rememberKey(vm.envUint("HOLESKY_PRIVATE_KEY"));
         vm.label(deployer, "Deployer");
 
         // Read core deployment data from json
-        core = CoreDeploymentLib.readCoreDeploymentJson("./script/config", 17000, "preprod");
+        core = CoreDeploymentLib.readCoreDeploymentJson("./script/config", block.chainid, "preprod");
 
         config.admin = deployer;
         config.numQuorums = 1;

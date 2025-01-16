@@ -3,9 +3,9 @@ pragma solidity ^0.8.12;
 
 import {Script} from "forge-std/Script.sol";
 import {console2 as console} from "forge-std/Test.sol";
-import {UpgradeableProxyLib} from "./UpgradeableProxyLib.sol";
-import {CoreDeploymentLib} from "./CoreDeploymentLib.sol";
-import {MiddlewareDeploymentLib} from "./MiddlewareDeploymentLib.sol";
+import {UpgradeableProxyLib} from "./utils/UpgradeableProxyLib.sol";
+import {CoreDeploymentLib} from "./utils/CoreDeploymentLib.sol";
+import {MiddlewareDeploymentLib} from "./utils/MiddlewareDeploymentLib.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 
 contract MiddlewareUpgrade is Script {
@@ -16,14 +16,15 @@ contract MiddlewareUpgrade is Script {
     address internal deployer;
 
     function setUp() public {
+        /// TODO: Right now we're only supporting pre-prod
         deployer = vm.rememberKey(vm.envUint("HOLESKY_PRIVATE_KEY"));
         vm.label(deployer, "Deployer");
 
         // Read core deployment data from json
-        core = CoreDeploymentLib.readCoreDeploymentJson("./script/config", 17000, "preprod");
+        core = CoreDeploymentLib.readCoreDeploymentJson("./script/config", block.chainid, "preprod");
 
         // Read existing middleware deployment from json
-        middlewareDeployment = MiddlewareDeploymentLib.readDeploymentJson("./script/deployments", 17000, "preprod");
+        middlewareDeployment = MiddlewareDeploymentLib.readDeploymentJson("./script/deployments", block.chainid, "preprod");
 
     }
 
@@ -35,7 +36,7 @@ contract MiddlewareUpgrade is Script {
 
         // Write updated deployment info to json
         string memory deploymentJson = generateDeploymentJson();
-        vm.writeFile(string(abi.encodePacked("./script/deployments/", vm.toString(uint256(17000)), "-preprod.json")), deploymentJson);
+        vm.writeFile(string(abi.encodePacked("./script/deployments/", vm.toString(uint256(block.chainid)), "-preprod.json")), deploymentJson);
 
         logDeploymentDetails(middlewareDeployment);
 
