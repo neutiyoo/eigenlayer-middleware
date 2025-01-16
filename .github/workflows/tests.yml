@@ -39,7 +39,7 @@ jobs:
       - name: Run tests
         shell: bash
         run: |
-          forge test --no-match-contract FFI,ForkTest
+          forge test --no-match-contract FFI --no-match-contract ForkTest
 
         env:
           RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
