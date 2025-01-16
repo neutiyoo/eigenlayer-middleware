@@ -36,9 +36,8 @@ contract DeployMiddleware is Script {
     function run() external {
         vm.startBroadcast(deployer);
 
-        /// TODO: Pass proxy admin instead of config
-        config.proxyAdmin = UpgradeableProxyLib.deployProxyAdmin();
-        middlewareDeployment = MiddlewareDeploymentLib.deployContracts(core, config);
+        address proxyAdmin = UpgradeableProxyLib.deployProxyAdmin();
+        middlewareDeployment = MiddlewareDeploymentLib.deployContracts(proxyAdmin, core, config);
 
         labelContracts(core, middlewareDeployment);
 

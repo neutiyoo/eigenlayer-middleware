@@ -57,7 +57,6 @@ library MiddlewareDeploymentLib {
     }
 
     struct ConfigData {
-        address proxyAdmin;
         address admin;
         uint256 numQuorums;
         uint256[] operatorParams;
@@ -78,6 +77,7 @@ library MiddlewareDeploymentLib {
     }
 
     function deployContracts(
+        address proxyAdmin,
         CoreDeploymentLib.DeploymentData memory core,
         ConfigData memory config
     ) internal returns (DeploymentData memory) {
@@ -87,11 +87,11 @@ library MiddlewareDeploymentLib {
         result.pauserRegistry = _deployPauserRegistry(config.admin);
 
         // Deploy proxies
-        result.stakeRegistry = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
-        result.registryCoordinator = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
-        result.blsapkRegistry = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
-        result.indexRegistry = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
-        result.serviceManager = UpgradeableProxyLib.setUpEmptyProxy(config.proxyAdmin);
+        result.stakeRegistry = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        result.registryCoordinator = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        result.blsapkRegistry = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        result.indexRegistry = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+        result.serviceManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
 
         // Deploy operator state retriever
         result.operatorStateRetriever = address(new OperatorStateRetriever());

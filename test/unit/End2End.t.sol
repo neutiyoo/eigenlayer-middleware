@@ -21,6 +21,8 @@ import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
 contract End2EndForkTest is Test {
     using OperatorLib for *;
 
+    address internal proxyAdmin;
+
     function _createOperators(uint256 numOperators, uint256 startIndex) internal returns (OperatorLib.Operator[] memory) {
         OperatorLib.Operator[] memory operators = new OperatorLib.Operator[](numOperators);
         for (uint256 i = 0; i < numOperators; i++) {
@@ -101,7 +103,7 @@ contract End2EndForkTest is Test {
         coreDeployment = CoreDeploymentLib.readCoreDeploymentJson("./script/config", 17000, "preprod");
 
         // Setup middleware deployment data
-        middlewareConfig.proxyAdmin = UpgradeableProxyLib.deployProxyAdmin();
+        proxyAdmin = UpgradeableProxyLib.deployProxyAdmin();
         middlewareConfig.admin = address(this);
         middlewareConfig.numQuorums = 1;
         middlewareConfig.operatorParams = new uint256[](3);
@@ -109,7 +111,7 @@ contract End2EndForkTest is Test {
         middlewareConfig.operatorParams[1] = 100;
         middlewareConfig.operatorParams[2] = 100;
 
-        middlewareDeployment = MiddlewareDeploymentLib.deployContracts(coreDeployment, middlewareConfig);
+        middlewareDeployment = MiddlewareDeploymentLib.deployContracts(proxyAdmin, coreDeployment, middlewareConfig);
         MiddlewareDeploymentLib.upgradeContracts(middlewareDeployment, middlewareConfig, coreDeployment);
     }
 
