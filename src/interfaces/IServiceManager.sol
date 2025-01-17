@@ -27,6 +27,9 @@ interface IServiceManagerErrors {
  * @author Layr Labs, Inc.
  */
 interface IServiceManager is IServiceManagerUI, IServiceManagerErrors {
+    // EVENTS
+    event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);
+
     /**
      * @notice Creates a new rewards submission to the EigenLayer RewardsCoordinator contract, to be split amongst the
      * set of stakers delegated to operators who are registered to this `avs`
@@ -40,30 +43,58 @@ interface IServiceManager is IServiceManagerUI, IServiceManagerErrors {
      */
     function createAVSRewardsSubmission(IRewardsCoordinator.RewardsSubmission[] calldata rewardsSubmissions) external;
 
-    function createOperatorSets(IAllocationManager.CreateSetParams[] memory params) external;
-
-    function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external;
-
-    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external;
+    /*******************************************************************************
+                                PERMISSIONCONTROLLER FUNCTIONS
+    *******************************************************************************/
+    /**
+     * @notice Calls `addPendingAdmin` on the `PermissionController` contract
+     * with `account` being the address of this contract.
+     * @param admin The address of the admin to add
+     * @dev Only callable by the owner of the contract
+     */
+    function addPendingAdmin(address admin) external;
 
     /**
-     * @notice Sets the AVS registrar address in the AllocationManager
-     * @param registrar The new AVS registrar address
-     * @dev Only callable by the registry coordinator
+     * @notice Calls `removePendingAdmin` on the `PermissionController` contract
+     * with `account` being the address of this contract.
+     * @param pendingAdmin The address of the pending admin to remove
+     * @dev Only callable by the owner of the contract
      */
-    function setAVSRegistrar(IAVSRegistrar registrar) external;
+    function removePendingAdmin(address pendingAdmin) external;
 
     /**
-     * @notice Forwards a call to EigenLayer's AVSDirectory contract to deregister an operator from operator sets
-     * @param operator The address of the operator to deregister.
-     * @param operatorSetIds The IDs of the operator sets.
+     * @notice Calls `removeAdmin` on the `PermissionController` contract
+     * with `account` being the address of this contract.
+     * @param admin The address of the admin to remove
+     * @dev Only callable by the owner of the contract
      */
-    function deregisterOperatorFromOperatorSets(address operator, uint32[] calldata operatorSetIds) external;
+    function removeAdmin(address admin) external;
 
-    function slashOperator(IAllocationManagerTypes.SlashingParams memory params) external;
+    /**
+     * @notice Calls `setAppointee` on the `PermissionController` contract
+     * with `account` being the address of this contract.
+     * @param appointee The address of the appointee to set
+     * @param target The address of the target to set the appointee for
+     * @param selector The function selector to set the appointee for
+     * @dev Only callable by the owner of the contract
+     */
+    function setAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external;
 
-    // EVENTS
-    event RewardsInitiatorUpdated(address prevRewardsInitiator, address newRewardsInitiator);
-    event SlasherUpdated(address prevSlasher, address newSlasher);
-    event SlasherProposed(address newSlasher, uint256 slasherProposalTimestamp);
+    /**
+     * @notice Calls `removeAppointee` on the `PermissionController` contract
+     * with `account` being the address of this contract.
+     * @param appointee The address of the appointee to remove
+     * @param target The address of the target to remove the appointee for
+     * @param selector The function selector to remove the appointee for
+     * @dev Only callable by the owner of the contract
+     */
+    function removeAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external;
 }

@@ -2,10 +2,12 @@
 pragma solidity ^0.8.27;
 
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import {SlasherBase} from "./base/SlasherBase.sol";
 import {IAllocationManager} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {SlasherBase} from "./base/SlasherBase.sol";
+import {IServiceManager} from "../interfaces/IServiceManager.sol";
 
-contract VetoableSlashing is SlasherBase {
+
+contract VetoableSlasher is SlasherBase {
     uint256 public constant VETO_PERIOD = 3 days;
     address public vetoCommittee;
 
@@ -16,12 +18,17 @@ contract VetoableSlashing is SlasherBase {
         _;
     }
 
+    constructor(
+        IAllocationManager _allocationManager,
+        IServiceManager _serviceManager,
+        address _slasher
+    ) SlasherBase(_allocationManager, _serviceManager) {}
+
     function initialize(
-        address _serviceManager,
         address _vetoCommittee,
         address _slasher
     ) external virtual initializer {
-        __SlasherBase_init(_serviceManager, _slasher);
+        __SlasherBase_init(_slasher);
         vetoCommittee = _vetoCommittee;
     }
 

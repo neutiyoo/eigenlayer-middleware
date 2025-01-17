@@ -7,13 +7,12 @@ import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSD
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
-import {IAllocationManager, IAllocationManagerTypes} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IPermissionController} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
 import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
-import {IAVSRegistrar} from "eigenlayer-contracts/src/contracts/interfaces/IAVSRegistrar.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {LibMergeSort} from "./libraries/LibMergeSort.sol";
@@ -40,32 +39,20 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _;
     }
 
-    /// @notice only slasher can call functions with this modifier
-    modifier onlySlasher() {
-        _checkSlasher();
-        _;
-    }
-
-    /// @notice only StakeRegistry can call functions with this modifier
-    modifier onlyStakeRegistry() {
-        _checkStakeRegistry();
-        _;
-    }
-
     /// @notice Sets the (immutable) `_registryCoordinator` address
     constructor(
         IAVSDirectory __avsDirectory,
         IRewardsCoordinator __rewardsCoordinator,
         IRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry,
-        IAllocationManager __allocationManager
+        IPermissionController __permissionController
     )
         ServiceManagerBaseStorage(
             __avsDirectory,
             __rewardsCoordinator,
             __registryCoordinator,
             __stakeRegistry,
-            __allocationManager
+            __permissionController
         )
     {
         _disableInitializers();
@@ -73,12 +60,62 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
 
     function __ServiceManagerBase_init(
         address initialOwner,
-        address _rewardsInitiator,
-        address _slasher
+        address _rewardsInitiator
     ) internal virtual onlyInitializing {
         _transferOwnership(initialOwner);
         _setRewardsInitiator(_rewardsInitiator);
-        _setSlasher(_slasher);
+    }
+
+    /// @inheritdoc IServiceManager
+    function addPendingAdmin(address admin) external onlyOwner {
+        _permissionController.addPendingAdmin({
+            account: address(this),
+            admin: admin
+        });
+    }
+
+    /// @inheritdoc IServiceManager
+    function removePendingAdmin(address pendingAdmin) external onlyOwner {
+        _permissionController.removePendingAdmin({
+            account: address(this), 
+            admin: pendingAdmin
+        });
+    }
+
+    /// @inheritdoc IServiceManager
+    function removeAdmin(address admin) external onlyOwner {
+        _permissionController.removeAdmin({
+            account: address(this), 
+            admin: admin
+        });
+    }
+
+    /// @inheritdoc IServiceManager
+    function setAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external onlyOwner {
+        _permissionController.setAppointee({
+            account: address(this), 
+            appointee: appointee, 
+            target: target, 
+            selector: selector
+        });
+    }
+
+    /// @inheritdoc IServiceManager
+    function removeAppointee(
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external onlyOwner {
+        _permissionController.removeAppointee({
+            account: address(this),
+            appointee: appointee,
+            target: target,
+            selector: selector
+        });
     }
 
     /**
@@ -88,10 +125,6 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
      */
     function updateAVSMetadataURI(string memory _metadataURI) public virtual onlyOwner {
         _avsDirectory.updateAVSMetadataURI(_metadataURI);
-    }
-
-    function slashOperator(IAllocationManager.SlashingParams memory params) external onlySlasher {
-        _allocationManager.slashOperator(address(this), params);
     }
 
     /**
@@ -124,18 +157,6 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
-    function createOperatorSets(IAllocationManager.CreateSetParams[] memory params) external onlyRegistryCoordinator {
-        _allocationManager.createOperatorSets(address(this), params);
-    }
-
-    function addStrategyToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external onlyStakeRegistry {
-        _allocationManager.addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
-    }
-
-    function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) external onlyStakeRegistry {
-        _allocationManager.removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
-    }
-
     /**
      * @notice Forwards a call to EigenLayer's AVSDirectory contract to confirm operator registration with the AVS
      * @param operator The address of the operator to register.
@@ -157,22 +178,6 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     }
 
     /**
-     * @notice Forwards a call to EigenLayer's AVSDirectory contract to deregister an operator from operator sets
-     * @param operator The address of the operator to deregister.
-     * @param operatorSetIds The IDs of the operator sets.
-     */
-    function deregisterOperatorFromOperatorSets(
-        address operator,
-        uint32[] calldata operatorSetIds
-    ) public virtual onlyRegistryCoordinator {
-        _allocationManager.deregisterFromOperatorSets(IAllocationManagerTypes.DeregisterParams({
-            operator: operator,
-            avs: address(this),
-            operatorSetIds: operatorSetIds
-        }));
-    }
-
-    /**
      * @notice Sets the rewards initiator address
      * @param newRewardsInitiator The new rewards initiator address
      * @dev only callable by the owner
@@ -181,51 +186,9 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _setRewardsInitiator(newRewardsInitiator);
     }
 
-    /**
-     * @notice Sets the AVS registrar address in the AllocationManager
-     * @param registrar The new AVS registrar address
-     * @dev Only callable by the registry coordinator
-     */
-    function setAVSRegistrar(IAVSRegistrar registrar) external onlyRegistryCoordinator {
-        _allocationManager.setAVSRegistrar(address(this), registrar);
-    }
-
-    /**
-     * @notice Proposes a new slasher address
-     * @param newSlasher The new slasher address
-     * @dev only callable by the owner
-     */
-    function proposeNewSlasher(address newSlasher) external onlyOwner {
-        _proposeNewSlasher(newSlasher);
-    }
-
-    /**
-     * @notice Accepts the proposed slasher address after the delay period
-     * @dev only callable by the owner
-     */
-    function acceptProposedSlasher() external onlyOwner {
-        require(
-            block.timestamp >= slasherProposalTimestamp + SLASHER_PROPOSAL_DELAY,
-            DelayPeriodNotPassed()
-        );
-        _setSlasher(proposedSlasher);
-        delete proposedSlasher;
-    }
-
     function _setRewardsInitiator(address newRewardsInitiator) internal {
         emit RewardsInitiatorUpdated(rewardsInitiator, newRewardsInitiator);
         rewardsInitiator = newRewardsInitiator;
-    }
-
-    function _proposeNewSlasher(address newSlasher) internal {
-        proposedSlasher = newSlasher;
-        slasherProposalTimestamp = block.timestamp;
-        emit SlasherProposed(newSlasher, slasherProposalTimestamp);
-    }
-
-    function _setSlasher(address newSlasher) internal {
-        emit SlasherUpdated(slasher, newSlasher);
-        slasher = newSlasher;
     }
 
     /**
@@ -306,19 +269,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         return address(_avsDirectory);
     }
 
-    function allocationManager() external view override returns (address) {
-        return address(_allocationManager);
-    }
-
     function _checkRewardsInitiator() internal view {
         require(msg.sender == rewardsInitiator, OnlyRewardsInitiator());
-    }
-
-    function _checkStakeRegistry() internal view {
-        require(msg.sender == address(_stakeRegistry), OnlyStakeRegistry());
-    }
-
-    function _checkSlasher() internal view {
-        require(msg.sender == slasher, OnlySlasher());
     }
 }

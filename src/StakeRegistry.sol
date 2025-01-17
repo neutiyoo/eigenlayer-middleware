@@ -46,8 +46,9 @@ contract StakeRegistry is StakeRegistryStorage {
         IRegistryCoordinator _registryCoordinator,
         IDelegationManager _delegationManager,
         IAVSDirectory _avsDirectory,
+        IAllocationManager _allocationManager,
         IServiceManager _serviceManager
-    ) StakeRegistryStorage(_registryCoordinator, _delegationManager, _avsDirectory, _serviceManager) {}
+    ) StakeRegistryStorage(_registryCoordinator, _delegationManager, _avsDirectory, _allocationManager, _serviceManager) {}
 
     /*******************************************************************************
                       EXTERNAL FUNCTIONS - REGISTRY COORDINATOR
@@ -237,10 +238,13 @@ contract StakeRegistry is StakeRegistryStorage {
     /**
      * @notice Sets the look ahead time for checking operator shares for a specific quorum
      * @param quorumNumber The quorum number to set the look ahead period for
-     * @param _lookAheadPeriod The number of days to look ahead when checking shares
+     * @param _lookAheadBlocks The number of blocks to look ahead when checking shares
      */
-    function setSlashableStakeLookahead(uint8 quorumNumber, uint32 _lookAheadPeriod) external onlyCoordinatorOwner quorumExists(quorumNumber) {
-        _setLookAheadPeriod(quorumNumber, _lookAheadPeriod);
+    function setSlashableStakeLookahead(
+        uint8 quorumNumber,
+        uint32 _lookAheadBlocks
+    ) external onlyCoordinatorOwner quorumExists(quorumNumber) {
+        _setLookAheadPeriod(quorumNumber, _lookAheadBlocks);
     }
 
     /**
@@ -262,7 +266,11 @@ contract StakeRegistry is StakeRegistryStorage {
             for (uint256 i = 0; i < numStratsToAdd; i++) {
                 strategiesToAdd[i] = _strategyParams[i].strategy;
             }
-            serviceManager.addStrategyToOperatorSet(quorumNumber, strategiesToAdd);
+            allocationManager.addStrategiesToOperatorSet({
+                avs: address(serviceManager),
+                operatorSetId: quorumNumber,
+                strategies: strategiesToAdd
+            });
         }
     }
 
@@ -297,7 +305,11 @@ contract StakeRegistry is StakeRegistryStorage {
         }
 
         if (isOperatorSetQuorum(quorumNumber)){
-            serviceManager.removeStrategiesFromOperatorSet(quorumNumber, _strategiesToRemove);
+            allocationManager.removeStrategiesFromOperatorSet({
+                avs: address(serviceManager),
+                operatorSetId: quorumNumber,
+                strategies: _strategiesToRemove
+            });
         }
     }
 
@@ -510,15 +522,14 @@ contract StakeRegistry is StakeRegistryStorage {
     function _getSlashableStakePerStrategy(uint8 quorumNumber, address operator) internal view returns (uint256[] memory) {
         address[] memory operators = new address[](1);
         operators[0] = operator;
-        uint32 beforeTimestamp = uint32(block.timestamp + slashableStakeLookAheadPerQuorum[quorumNumber]);
+        uint32 beforeTimestamp = uint32(block.number + slashableStakeLookAheadPerQuorum[quorumNumber]);
 
-        uint256[][] memory slashableShares = IAllocationManager(serviceManager.allocationManager())
-            .getMinimumSlashableStake(
-                OperatorSet(address(serviceManager), quorumNumber),
-                operators,
-                strategiesPerQuorum[quorumNumber],
-                beforeTimestamp
-            );
+        uint256[][] memory slashableShares = allocationManager.getMinimumSlashableStake(
+            OperatorSet(address(serviceManager), quorumNumber),
+            operators,
+            strategiesPerQuorum[quorumNumber],
+            beforeTimestamp
+        );
 
         return slashableShares[0];
     }
@@ -811,12 +822,12 @@ contract StakeRegistry is StakeRegistryStorage {
     /**
      * @notice Sets the look ahead time for checking operator shares for a specific quorum
      * @param quorumNumber The quorum number to set the look ahead period for
-     * @param _lookAheadDays The number of days to look ahead when checking shares
+     * @param _lookAheadBlocks The number of blocks to look ahead when checking shares
      */
-    function _setLookAheadPeriod(uint8 quorumNumber, uint32 _lookAheadDays) internal {
+    function _setLookAheadPeriod(uint8 quorumNumber, uint32 _lookAheadBlocks) internal {
         uint32 oldLookAheadDays = slashableStakeLookAheadPerQuorum[quorumNumber];
-        slashableStakeLookAheadPerQuorum[quorumNumber] = _lookAheadDays;
-        emit LookAheadPeriodChanged(oldLookAheadDays, _lookAheadDays);
+        slashableStakeLookAheadPerQuorum[quorumNumber] = _lookAheadBlocks;
+        emit LookAheadPeriodChanged(oldLookAheadDays, _lookAheadBlocks);
     }
 
 
