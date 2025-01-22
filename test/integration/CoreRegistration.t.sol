@@ -92,7 +92,8 @@ contract Test_CoreRegistration is MockAVSDeployer {
             rewardsCoordinatorMock,
             registryCoordinator,
             stakeRegistry,
-            permissionController
+            permissionController,
+            allocationManager
         );
 
         registryCoordinatorImplementation = new RegistryCoordinatorHarness(

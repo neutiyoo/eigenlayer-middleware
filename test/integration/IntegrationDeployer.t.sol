@@ -355,7 +355,8 @@ abstract contract IntegrationDeployer is Test, IUserDeployer {
             rewardsCoordinator,
             IRegistryCoordinator(registryCoordinator),
             stakeRegistry,
-            permissionController
+            permissionController,
+            allocationManager
         );
 
         proxyAdmin.upgrade(

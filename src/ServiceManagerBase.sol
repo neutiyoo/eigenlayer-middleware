@@ -7,6 +7,9 @@ import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSD
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IAllocationManager, IAllocationManagerTypes} from
+    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IPermissionController} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 import {IPermissionController} from
     "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 
@@ -46,14 +49,16 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         IRewardsCoordinator __rewardsCoordinator,
         IRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry,
-        IPermissionController __permissionController
+        IPermissionController __permissionController,
+        IAllocationManager __allocationManager
     )
         ServiceManagerBaseStorage(
             __avsDirectory,
             __rewardsCoordinator,
             __registryCoordinator,
             __stakeRegistry,
-            __permissionController
+            __permissionController,
+            __allocationManager
         )
     {
         _disableInitializers();
@@ -68,10 +73,11 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     }
 
     /// @inheritdoc IServiceManager
-    function addPendingAdmin(
-        address admin
-    ) external onlyOwner {
-        _permissionController.addPendingAdmin({account: address(this), admin: admin});
+    function addPendingAdmin(address admin) external onlyOwner {
+        _permissionController.addPendingAdmin({
+            account: address(this),
+            admin: admin
+        });
     }
 
     /// @inheritdoc IServiceManager
@@ -173,6 +179,15 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         address operator
     ) public virtual onlyRegistryCoordinator {
         _avsDirectory.deregisterOperatorFromAVS(operator);
+    }
+
+    function deregisterOperatorFromOperatorSets(address operator, uint32[] memory operatorSetIds) public virtual onlyRegistryCoordinator {
+        IAllocationManager.DeregisterParams memory params = IAllocationManagerTypes.DeregisterParams({
+            operator: operator,
+            avs: address(this),
+            operatorSetIds: operatorSetIds
+        });
+        _allocationManager.deregisterFromOperatorSets(params);
     }
 
     /**

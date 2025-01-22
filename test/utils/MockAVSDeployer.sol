@@ -237,7 +237,8 @@ contract MockAVSDeployer is Test {
             IRewardsCoordinator(address(rewardsCoordinatorMock)),
             registryCoordinator,
             stakeRegistry,
-            permissionControllerMock
+            permissionControllerMock,
+            allocationManagerMock
         );
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(serviceManager))),
