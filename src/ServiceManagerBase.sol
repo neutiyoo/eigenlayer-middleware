@@ -7,15 +7,18 @@ import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSD
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {IRewardsCoordinator} from
     "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
-import {IAllocationManager, IAllocationManagerTypes} from
-    "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IPermissionController} from "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
+import {
+    IAllocationManager,
+    IAllocationManagerTypes
+} from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
+import {IPermissionController} from
+    "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 import {IPermissionController} from
     "eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 
 import {ServiceManagerBaseStorage} from "./ServiceManagerBaseStorage.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
@@ -47,7 +50,7 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     constructor(
         IAVSDirectory __avsDirectory,
         IRewardsCoordinator __rewardsCoordinator,
-        IRegistryCoordinator __registryCoordinator,
+        ISlashingRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry,
         IPermissionController __permissionController,
         IAllocationManager __allocationManager
@@ -73,11 +76,10 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     }
 
     /// @inheritdoc IServiceManager
-    function addPendingAdmin(address admin) external onlyOwner {
-        _permissionController.addPendingAdmin({
-            account: address(this),
-            admin: admin
-        });
+    function addPendingAdmin(
+        address admin
+    ) external onlyOwner {
+        _permissionController.addPendingAdmin({account: address(this), admin: admin});
     }
 
     /// @inheritdoc IServiceManager
@@ -181,7 +183,10 @@ abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
         _avsDirectory.deregisterOperatorFromAVS(operator);
     }
 
-    function deregisterOperatorFromOperatorSets(address operator, uint32[] memory operatorSetIds) public virtual onlyRegistryCoordinator {
+    function deregisterOperatorFromOperatorSets(
+        address operator,
+        uint32[] memory operatorSetIds
+    ) public virtual onlyRegistryCoordinator {
         IAllocationManager.DeregisterParams memory params = IAllocationManagerTypes.DeregisterParams({
             operator: operator,
             avs: address(this),

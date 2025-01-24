@@ -2,8 +2,7 @@
 pragma solidity ^0.8.27;
 
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import {IServiceManager} from "../../interfaces/IServiceManager.sol";
-import {SlasherStorage} from "./SlasherStorage.sol";
+import {SlasherStorage, ISlashingRegistryCoordinator} from "./SlasherStorage.sol";
 import {
     IAllocationManagerTypes,
     IAllocationManager
@@ -18,8 +17,8 @@ abstract contract SlasherBase is Initializable, SlasherStorage {
 
     constructor(
         IAllocationManager _allocationManager,
-        IServiceManager _serviceManager
-    ) SlasherStorage(_allocationManager, _serviceManager) {
+        ISlashingRegistryCoordinator _registryCoordinator
+    ) SlasherStorage(_allocationManager, _registryCoordinator) {
         _disableInitializers();
     }
 
@@ -33,7 +32,10 @@ abstract contract SlasherBase is Initializable, SlasherStorage {
         uint256 _requestId,
         IAllocationManager.SlashingParams memory _params
     ) internal virtual {
-        allocationManager.slashOperator({avs: address(serviceManager), params: _params});
+        allocationManager.slashOperator({
+            avs: slashingRegistryCoordinator.accountIdentifier(),
+            params: _params
+        });
         emit OperatorSlashed(
             _requestId,
             _params.operator,

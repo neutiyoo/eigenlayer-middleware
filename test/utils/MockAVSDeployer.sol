@@ -11,6 +11,7 @@ import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
 
 import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
+import {SlashingRegistryCoordinator} from "../../src/SlashingRegistryCoordinator.sol";
 import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {RegistryCoordinatorHarness} from "../harnesses/RegistryCoordinatorHarness.t.sol";
 import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
@@ -21,6 +22,8 @@ import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
+
+import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
@@ -115,7 +118,7 @@ contract MockAVSDeployer is Test {
     uint16 defaultKickBIPsOfTotalStake = 150;
     uint8 numQuorums = 192;
 
-    IRegistryCoordinator.OperatorSetParam[] operatorSetParams;
+    ISlashingRegistryCoordinator.OperatorSetParam[] operatorSetParams;
 
     uint8 maxQuorumsToRegisterFor = 4;
     uint256 maxOperatorsToRegister = 4;
@@ -208,13 +211,8 @@ contract MockAVSDeployer is Test {
 
         cheats.startPrank(proxyAdminOwner);
 
-        stakeRegistryImplementation = new StakeRegistryHarness(
-            IRegistryCoordinator(registryCoordinator),
-            delegationMock,
-            avsDirectory,
-            allocationManagerMock,
-            serviceManager
-        );
+        stakeRegistryImplementation =
+            new StakeRegistryHarness(ISlashingRegistryCoordinator(registryCoordinator), delegationMock, avsDirectory, allocationManagerMock);
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
             address(stakeRegistryImplementation)
@@ -290,11 +288,26 @@ contract MockAVSDeployer is Test {
             pauserRegistry
         );
         {
+            proxyAdmin.upgradeAndCall(
+                TransparentUpgradeableProxy(payable(address(registryCoordinator))),
+                address(registryCoordinatorImplementation),
+                abi.encodeCall(
+                    SlashingRegistryCoordinator.initialize,
+                    (
+                        registryCoordinatorOwner, // _initialOwner
+                        churnApprover, // _churnApprover
+                        ejector, // _ejector
+                        0, // _initialPausedStatus
+                        address(serviceManager) // _accountIdentifier
+                    )
+                )
+            );
+
             delete operatorSetParams;
             for (uint256 i = 0; i < numQuorumsToAdd; i++) {
                 // hard code these for now
                 operatorSetParams.push(
-                    IRegistryCoordinator.OperatorSetParam({
+                    ISlashingRegistryCoordinator.OperatorSetParam({
                         maxOperatorCount: defaultMaxOperatorCount,
                         kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
                         kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
@@ -302,39 +315,24 @@ contract MockAVSDeployer is Test {
                 );
             }
 
-            // Create arrays for quorum types and lookahead periods
-            StakeType[] memory quorumStakeTypes = new StakeType[](numQuorumsToAdd);
-            uint32[] memory slashableStakeQuorumLookAheadPeriods = new uint32[](numQuorumsToAdd);
+            cheats.stopPrank();
 
-            // Set all quorums to TOTAL_DELEGATED type with 0 lookahead period
+            // add TOTAL_DELEGATED stake type quorums
             for (uint256 i = 0; i < numQuorumsToAdd; i++) {
-                quorumStakeTypes[i] = StakeType.TOTAL_DELEGATED;
-                slashableStakeQuorumLookAheadPeriods[i] = 0;
+                cheats.prank(registryCoordinator.owner());
+                registryCoordinator.createTotalDelegatedStakeQuorum(
+                    operatorSetParams[i],
+                    minimumStakeForQuorum[i],
+                    quorumStrategiesConsideredAndMultipliers[i]
+                );
             }
 
-            proxyAdmin.upgradeAndCall(
-                TransparentUpgradeableProxy(payable(address(registryCoordinator))),
-                address(registryCoordinatorImplementation),
-                abi.encodeCall(
-                    RegistryCoordinator.initialize,
-                    (
-                        registryCoordinatorOwner, // _initialOwner
-                        churnApprover, // _churnApprover
-                        ejector, // _ejector
-                        0, // _initialPausedStatus
-                        operatorSetParams, // _operatorSetParams
-                        minimumStakeForQuorum, // _minimumStakes
-                        quorumStrategiesConsideredAndMultipliers, // _strategyParams
-                        quorumStakeTypes, // _stakeTypes
-                        slashableStakeQuorumLookAheadPeriods // _lookAheadPeriods
-                    )
-                )
-            );
         }
 
         operatorStateRetriever = new OperatorStateRetriever();
 
-        cheats.stopPrank();
+        registryCoordinator.setOperatorSetsEnabled(false);
+        registryCoordinator.setM2QuorumsDisabled(false);
     }
 
     function _labelContracts() internal {
@@ -510,7 +508,7 @@ contract MockAVSDeployer is Test {
     function _signOperatorChurnApproval(
         address registeringOperator,
         bytes32 registeringOperatorId,
-        IRegistryCoordinator.OperatorKickParam[] memory operatorKickParams,
+        ISlashingRegistryCoordinator.OperatorKickParam[] memory operatorKickParams,
         bytes32 salt,
         uint256 expiry
     ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory) {

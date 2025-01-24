@@ -11,9 +11,9 @@ import {
     OperatorSet,
     IAllocationManagerTypes
 } from "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
+import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
 
-abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
+abstract contract SlashingRegistryCoordinatorStorage is ISlashingRegistryCoordinator {
     /**
      *
      *                            CONSTANTS AND IMMUTABLES
@@ -40,8 +40,6 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     /// @notice The maximum number of quorums this contract supports
     uint8 internal constant MAX_QUORUM_COUNT = 192;
 
-    /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
-    IServiceManager public immutable serviceManager;
     /// @notice the BLS Aggregate Pubkey Registry contract that will keep track of operators' aggregate BLS public keys per quorum
     IBLSApkRegistry public immutable blsApkRegistry;
     /// @notice the Stake Registry contract that will keep track of operators' stakes
@@ -84,22 +82,29 @@ abstract contract RegistryCoordinatorStorage is IRegistryCoordinator {
     /// @notice the delay in seconds before an operator can reregister after being ejected
     uint256 public ejectionCooldown;
 
-    /// @notice Whether this AVS uses operator sets for registration
-    /// @dev If true, operators must register to operator sets via the AllocationManager
-    bool public isOperatorSetAVS;
+    /// @notice Whether this AVS allows operator sets for registration
+    /// @dev If true, operators may register to operator sets via the AllocationManager
+    bool public operatorSetsEnabled;
 
-    /// @notice Mapping from quorum number to whether the quorum is an M2 quorum
-    /// @dev M2 quorums are pre-operator sets and track total delegated stake only
-    mapping(uint8 => bool) public isM2Quorum;
+    /// @notice Whether this AVS allows M2 quorums for registration
+    /// @dev If true, operators may **not** register to M2 quorums. Deregistration is still allowed.
+    bool public m2QuorumsDisabled;
+
+    /// @notice The account identifier for this AVS (used for UAM integration in EigenLayer)
+    /// @dev NOTE: Updating this value will break existing OperatorSets and UAM integration.
+    /// This value should only be set once.
+    address public accountIdentifier;
+
+    /// @notice The bitmap containing all M2 quorums. This is only used for existing AVS middlewares that have M2 quorums
+    /// and need to call `enableOperatorSets()` to enable operator sets mode.
+    uint256 internal M2quorumBitmap;
 
     constructor(
-        IServiceManager _serviceManager,
         IStakeRegistry _stakeRegistry,
         IBLSApkRegistry _blsApkRegistry,
         IIndexRegistry _indexRegistry,
         IAllocationManager _allocationManager
     ) {
-        serviceManager = _serviceManager;
         stakeRegistry = _stakeRegistry;
         blsApkRegistry = _blsApkRegistry;
         indexRegistry = _indexRegistry;
