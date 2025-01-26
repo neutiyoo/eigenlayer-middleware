@@ -132,7 +132,7 @@ library MiddlewareDeploymentLib {
         return address(new PauserRegistry(pausers, admin));
     }
 
-    function _deployTokenAndStrategy(address strategyFactory) private returns (address token, address strategy) {
+    function _deployTokenAndStrategy(address strategyFactory) internal returns (address token, address strategy) {
         ERC20Mock tokenContract = new ERC20Mock();
         token = address(tokenContract);
         strategy = address(IStrategyFactory(strategyFactory).deployNewStrategy(IERC20(token)));
