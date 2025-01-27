@@ -7,7 +7,6 @@
 // import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 // import {console} from "forge-std/console.sol";
 
-
 // contract RegistryCoordinatorUnitTests is MockAVSDeployer {
 //     using BN254 for BN254.G1Point;
 
@@ -47,7 +46,7 @@
 //     // emitted when an operator's index in the orderd operator list for the quorum with number `quorumNumber` is updated
 //     event QuorumIndexUpdate(bytes32 indexed operatorId, uint8 quorumNumber, uint32 newIndex);
 
-//     event OperatorSetParamsUpdated(uint8 indexed quorumNumber, ISlashingRegistryCoordinator.OperatorSetParam operatorSetParams);
+//     event OperatorSetParamsUpdated(uint8 indexed quorumNumber, ISlashingRegistryCoordinatorTypes.OperatorSetParam operatorSetParams);
 
 //     event ChurnApproverUpdated(address prevChurnApprover, address newChurnApprover);
 
@@ -204,9 +203,9 @@
 //     }
 
 //     function test_createQuorum_revert_notOwner() public {
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams;
+//         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams;
 //         uint96 minimumStake;
-//         IStakeRegistry.StrategyParams[] memory strategyParams;
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams;
 
 //         cheats.expectRevert("Ownable: caller is not the owner");
 //         cheats.prank(defaultOperator);
@@ -218,16 +217,16 @@
 //         // this is necessary since the default setup already configures the max number of quorums, preventing adding more
 //         _deployMockEigenLayerAndAVS(0);
 
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams =
-//             ISlashingRegistryCoordinator.OperatorSetParam({
+//         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+//             ISlashingRegistryCoordinatorTypes.OperatorSetParam({
 //                     maxOperatorCount: defaultMaxOperatorCount,
 //                     kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
 //                     kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
 //             });
 //         uint96 minimumStake = 1;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
 //         strategyParams[0] =
-//             IStakeRegistry.StrategyParams({
+//             IStakeRegistryTypes.StrategyParams({
 //                 strategy: IStrategy(address(1000)),
 //                 multiplier: 1e16
 //             });
@@ -333,7 +332,7 @@
 //         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), quorumBitmap);
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(quorumBitmap),
 //                 updateBlockNumber: uint32(block.number),
 //                 nextUpdateBlockNumber: 0
@@ -390,7 +389,7 @@
 //         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), quorumBitmap);
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(quorumBitmap),
 //                 updateBlockNumber: uint32(block.number),
 //                 nextUpdateBlockNumber: 0
@@ -441,7 +440,7 @@
 //         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), quorumBitmap);
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(BitmapUtils.orderedBytesArrayToBitmap(quorumNumbers)),
 //                 updateBlockNumber: uint32(registrationBlockNumber),
 //                 nextUpdateBlockNumber: uint32(nextRegistrationBlockNumber)
@@ -449,7 +448,7 @@
 //         );
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 1))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(quorumBitmap),
 //                 updateBlockNumber: uint32(nextRegistrationBlockNumber),
 //                 nextUpdateBlockNumber: 0
@@ -570,7 +569,7 @@
 //         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), quorumBitmap);
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(quorumBitmap),
 //                 updateBlockNumber: uint32(block.number),
 //                 nextUpdateBlockNumber: 0
@@ -663,7 +662,7 @@
 //         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), 0);
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(quorumBitmap),
 //                 updateBlockNumber: registrationBlockNumber,
 //                 nextUpdateBlockNumber: deregistrationBlockNumber
@@ -718,7 +717,7 @@
 //         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), 0);
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(quorumBitmap),
 //                 updateBlockNumber: registrationBlockNumber,
 //                 nextUpdateBlockNumber: deregistrationBlockNumber
@@ -794,7 +793,7 @@
 //         // check that the quorum bitmap history is as expected
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(registrationQuorumBitmap),
 //                 updateBlockNumber: registrationBlockNumber,
 //                 nextUpdateBlockNumber: deregistrationBlockNumber
@@ -804,7 +803,7 @@
 //         if (deregistrationQuorumBitmap != registrationQuorumBitmap) {
 //             assertEq(
 //                 keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 1))),
-//                 keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//                 keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                     quorumBitmap: uint192(expectedQuorumBitmap),
 //                     updateBlockNumber: deregistrationBlockNumber,
 //                     nextUpdateBlockNumber: 0
@@ -880,7 +879,7 @@
 //         assertEq(registryCoordinator.getCurrentQuorumBitmap(defaultOperatorId), 0);
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(operatorToDeregisterId, 0))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(operatorToDeregisterQuorumBitmap),
 //                 updateBlockNumber: registrationBlockNumber,
 //                 nextUpdateBlockNumber: deregistrationBlockNumber
@@ -930,7 +929,7 @@
 //         uint historyLength = registryCoordinator.getQuorumBitmapHistoryLength(defaultOperatorId);
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, historyLength - 1))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(quorumBitmap),
 //                 updateBlockNumber: uint32(reregistrationBlockNumber),
 //                 nextUpdateBlockNumber: 0
@@ -1109,7 +1108,7 @@
 //         // check that the quorum bitmap history is as expected
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(registrationQuorumBitmap),
 //                 updateBlockNumber: registrationBlockNumber,
 //                 nextUpdateBlockNumber: deregistrationBlockNumber
@@ -1119,7 +1118,7 @@
 //         if (deregistrationQuorumBitmap != registrationQuorumBitmap) {
 //             assertEq(
 //                 keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 1))),
-//                 keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//                 keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                     quorumBitmap: uint192(expectedQuorumBitmap),
 //                     updateBlockNumber: deregistrationBlockNumber,
 //                     nextUpdateBlockNumber: 0
@@ -1393,7 +1392,6 @@
 //         cheats.expectEmit(true, true, true, true, address(indexRegistry));
 //         emit QuorumIndexUpdate(operatorToRegisterId, defaultQuorumNumber, numOperators);
 
-
 //         cheats.expectEmit(true, true, true, true, address(registryCoordinator));
 //         emit OperatorDeregistered(operatorKickParams[0].operator, operatorToKickId);
 //         cheats.expectEmit(true, true, true, true, address(blsApkRegistry));
@@ -1437,7 +1435,7 @@
 //         );
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(operatorToKickId, 0))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(quorumBitmap),
 //                 updateBlockNumber: kickRegistrationBlockNumber,
 //                 nextUpdateBlockNumber: registrationBlockNumber
@@ -1486,7 +1484,6 @@
 //             ISlashingRegistryCoordinator.OperatorKickParam[] memory operatorKickParams
 //         ) = _test_registerOperatorWithChurn_SetUp(pseudoRandomNumber, quorumNumbers, operatorToKickStake);
 //         bytes32 operatorToRegisterId = BN254.hashG1Point(operatorToRegisterPubKey);
-
 
 //         // set the stake of the operator to register to the defaultKickBIPsOfOperatorStake multiple of the operatorToKickStake
 //         _setOperatorWeight(operatorToRegister, defaultQuorumNumber, operatorToKickStake * defaultKickBIPsOfOperatorStake / 10000 + 1);
@@ -1834,7 +1831,7 @@
 //         registryCoordinator._updateOperatorBitmapExternal(defaultOperatorId, newBitmap);
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(newBitmap),
 //                 updateBlockNumber: uint32(block.number),
 //                 nextUpdateBlockNumber: 0
@@ -1850,7 +1847,7 @@
 //         registryCoordinator._updateOperatorBitmapExternal(defaultOperatorId, newBitmap);
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(newBitmap),
 //                 updateBlockNumber: uint32(block.number),
 //                 nextUpdateBlockNumber: 0
@@ -1870,7 +1867,7 @@
 //         registryCoordinator._updateOperatorBitmapExternal(defaultOperatorId, newBitmap);
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 0))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(pastBitmap),
 //                 updateBlockNumber: uint32(previousBlockNumber),
 //                 nextUpdateBlockNumber: uint32(block.number)
@@ -1878,7 +1875,7 @@
 //         );
 //         assertEq(
 //             keccak256(abi.encode(registryCoordinator.getQuorumBitmapUpdateByIndex(defaultOperatorId, 1))),
-//             keccak256(abi.encode(ISlashingRegistryCoordinator.QuorumBitmapUpdate({
+//             keccak256(abi.encode(ISlashingRegistryCoordinatorTypes.QuorumBitmapUpdate({
 //                 quorumBitmap: uint192(newBitmap),
 //                 updateBlockNumber: uint32(block.number),
 //                 nextUpdateBlockNumber: 0
@@ -1905,14 +1902,14 @@
 //     function test_CreateTotalDelegatedStakeQuorum() public {
 //         _deployMockEigenLayerAndAVS(0);
 //         // Set up test params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 0,
 //             kickBIPsOfTotalStake: 0
 //         });
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(0x1)),
 //             multiplier: 1000
 //         });
@@ -1932,7 +1929,7 @@
 //         assertEq(registryCoordinator.quorumCount(), initialQuorumCount + 1);
 
 //         // Verify quorum params were set correctly
-//         ISlashingRegistryCoordinator.OperatorSetParam memory storedParams = registryCoordinator.getOperatorSetParams(initialQuorumCount);
+//         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory storedParams = registryCoordinator.getOperatorSetParams(initialQuorumCount);
 //         assertEq(storedParams.maxOperatorCount, operatorSetParams.maxOperatorCount);
 //         assertEq(storedParams.kickBIPsOfOperatorStake, operatorSetParams.kickBIPsOfOperatorStake);
 //         assertEq(storedParams.kickBIPsOfTotalStake, operatorSetParams.kickBIPsOfTotalStake);
@@ -1940,14 +1937,14 @@
 
 //     function test_CreateSlashableStakeQuorum_Reverts() public {
 //         _deployMockEigenLayerAndAVS(0);
-//        ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 0,
 //             kickBIPsOfTotalStake: 0
 //         });
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(0x1)),
 //             multiplier: 1000
 //         });
@@ -1992,7 +1989,7 @@
 //             expiry: 0
 //         });
 
-//         IBLSApkRegistry.PubkeyRegistrationParams memory operatorRegisterApkParams = IBLSApkRegistry.PubkeyRegistrationParams({
+//         IBLSApkRegistryTypes.PubkeyRegistrationParams memory operatorRegisterApkParams = IBLSApkRegistryTypes.PubkeyRegistrationParams({
 //             pubkeyRegistrationSignature: BN254.G1Point({
 //                 X: 0,
 //                 Y: 0
@@ -2041,7 +2038,7 @@
 
 //         bytes memory quorumNumbers = new bytes(1);
 //         quorumNumbers[0] = bytes1(uint8(0));
-//         IBLSApkRegistry.PubkeyRegistrationParams memory params;
+//         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params;
 //         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature;
 
 //         cheats.expectRevert();
@@ -2062,14 +2059,14 @@
 //         registryCoordinator.enableOperatorSets();
 
 //         // Create quorum params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 1000,
 //             kickBIPsOfTotalStake: 100
 //         });
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 1
 //         });
@@ -2094,14 +2091,14 @@
 //         registryCoordinator.enableOperatorSets();
 
 //         // Create quorum params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 1000,
 //             kickBIPsOfTotalStake: 100
 //         });
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 10000
 //         });
@@ -2124,15 +2121,15 @@
 //         registryCoordinator.enableOperatorSets();
 
 //         // Create quorum params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 1000,
 //             kickBIPsOfTotalStake: 100
 //         });
 
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 10000
 //         });
@@ -2145,14 +2142,13 @@
 //             strategyParams
 //         );
 
-
 //         uint32[] memory operatorSetIds = new uint32[](1);
 //         operatorSetIds[0] = 0;
 
 //         string memory socket = "socket";
-//         IBLSApkRegistry.PubkeyRegistrationParams memory params;
+//         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params;
 //         // TODO:
-//         // params = IBLSApkRegistry.PubkeyRegistrationParams({
+//         // params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
 //         //     pubkeyG1: defaultPubKey,
 //         //     pubkeyG2: defaultPubKeyG2,
 //         //     pubkeySignature: defaultPubKeySignature
@@ -2171,15 +2167,15 @@
 //         registryCoordinator.enableOperatorSets();
 
 //         // Create quorum params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 1000,
 //             kickBIPsOfTotalStake: 100
 //         });
 
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 10000
 //         });
@@ -2196,9 +2192,9 @@
 //         operatorSetIds[0] = 0;
 
 //         string memory socket = "socket";
-//         IBLSApkRegistry.PubkeyRegistrationParams memory params;
+//         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params;
 //         // TODO:
-//         // params = IBLSApkRegistry.PubkeyRegistrationParams({
+//         // params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
 //         //     pubkeyG1: defaultPubKey,
 //         //     pubkeyG2: defaultPubKeyG2,
 //         //     pubkeySignature: defaultPubKeySignature
@@ -2230,15 +2226,15 @@
 //         vm.skip(true);
 //         _deployMockEigenLayerAndAVS(0);
 
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: defaultMaxOperatorCount,
 //             kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
 //             kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
 //         });
 
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 10000
 //         });
@@ -2263,15 +2259,15 @@
 //         registryCoordinator.enableOperatorSets();
 
 //         // Create quorum params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 1000,
 //             kickBIPsOfTotalStake: 100
 //         });
 
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 10000
 //         });
@@ -2289,16 +2285,15 @@
 //         operatorSetIds[0] = 0;
 
 //         string memory socket = "socket";
-//         IBLSApkRegistry.PubkeyRegistrationParams memory params;
+//         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params;
 //         // TODO:
-//         // params = IBLSApkRegistry.PubkeyRegistrationParams({
+//         // params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
 //         //     pubkeyG1: defaultPubKey,
 //         //     pubkeyG2: defaultPubKeyG2,
 //         //     pubkeySignature: defaultPubKeySignature
 //         // });
 
 //         bytes memory data = abi.encode(socket, params);
-
 
 //         cheats.startPrank(address(registryCoordinator.allocationManager()));
 //         registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);
@@ -2316,15 +2311,15 @@
 //         registryCoordinator.enableOperatorSets();
 
 //         // Create quorum params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 1000,
 //             kickBIPsOfTotalStake: 100
 //         });
 
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 10000
 //         });
@@ -2337,14 +2332,13 @@
 //             strategyParams
 //         );
 
-
 //         uint32[] memory operatorSetIds = new uint32[](1);
 //         operatorSetIds[0] = 0;
 
 //         string memory socket = "socket";
-//         IBLSApkRegistry.PubkeyRegistrationParams memory params;
+//         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params;
 //         // TODO:
-//         // params = IBLSApkRegistry.PubkeyRegistrationParams({
+//         // params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
 //         //     pubkeyG1: defaultPubKey,
 //         //     pubkeyG2: defaultPubKeyG2,
 //         //     pubkeySignature: defaultPubKeySignature
@@ -2364,15 +2358,15 @@
 //         registryCoordinator.enableOperatorSets();
 
 //         // Create quorum params
-//         ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator.OperatorSetParam({
+//         ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
 //             maxOperatorCount: 10,
 //             kickBIPsOfOperatorStake: 1000,
 //             kickBIPsOfTotalStake: 100
 //         });
 
 //         uint96 minimumStake = 100;
-//         IStakeRegistry.StrategyParams[] memory strategyParams = new IStakeRegistry.StrategyParams[](1);
-//         strategyParams[0] = IStakeRegistry.StrategyParams({
+//         IStakeRegistryTypes.StrategyParams[] memory strategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+//         strategyParams[0] = IStakeRegistryTypes.StrategyParams({
 //             strategy: IStrategy(address(1)),
 //             multiplier: 10000
 //         });
@@ -2390,16 +2384,15 @@
 //         operatorSetIds[0] = 0;
 
 //         string memory socket = "socket";
-//         IBLSApkRegistry.PubkeyRegistrationParams memory params;
+//         IBLSApkRegistryTypes.PubkeyRegistrationParams memory params;
 //         // TODO:
-//         // params = IBLSApkRegistry.PubkeyRegistrationParams({
+//         // params = IBLSApkRegistryTypes.PubkeyRegistrationParams({
 //         //     pubkeyG1: defaultPubKey,
 //         //     pubkeyG2: defaultPubKeyG2,
 //         //     pubkeySignature: defaultPubKeySignature
 //         // });
 
 //         bytes memory data = abi.encode(socket, params);
-
 
 //         cheats.prank(address(registryCoordinator.allocationManager()));
 //         registryCoordinator.registerOperator(defaultOperator, operatorSetIds, data);

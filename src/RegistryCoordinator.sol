@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 import {IAllocationManager} from
     "eigenlayer-contracts/src/contracts/interfaces/IAllocationManager.sol";
-import {IBLSApkRegistry} from "./interfaces/IBLSApkRegistry.sol";
+import {IBLSApkRegistry, IBLSApkRegistryTypes} from "./interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "./interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "./interfaces/IIndexRegistry.sol";
 import {IServiceManager} from "./interfaces/IServiceManager.sol";
@@ -12,6 +12,8 @@ import {IRegistryCoordinator} from "./interfaces/IRegistryCoordinator.sol";
 
 import {BitmapUtils} from "./libraries/BitmapUtils.sol";
 import {SlashingRegistryCoordinator} from "./SlashingRegistryCoordinator.sol";
+import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
+import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 /**
  * @title A `RegistryCoordinator` that has three registries:
@@ -21,7 +23,7 @@ import {SlashingRegistryCoordinator} from "./SlashingRegistryCoordinator.sol";
  *
  * @author Layr Labs, Inc.
  */
-contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinator {
+contract RegistryCoordinator is IRegistryCoordinator, SlashingRegistryCoordinator {
     using BitmapUtils for *;
 
     /// @notice the ServiceManager for this AVS, which forwards calls onto EigenLayer's core contracts
@@ -56,7 +58,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
     function registerOperator(
         bytes memory quorumNumbers,
         string memory socket,
-        IBLSApkRegistry.PubkeyRegistrationParams memory params,
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params,
         SignatureWithSaltAndExpiry memory operatorSignature
     ) external onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR) {
         require(!m2QuorumsDisabled, M2QuorumsAlreadyDisabled());
@@ -104,7 +106,7 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
     function registerOperatorWithChurn(
         bytes calldata quorumNumbers,
         string memory socket,
-        IBLSApkRegistry.PubkeyRegistrationParams memory params,
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory params,
         OperatorKickParam[] memory operatorKickParams,
         SignatureWithSaltAndExpiry memory churnApproverSignature,
         SignatureWithSaltAndExpiry memory operatorSignature
@@ -143,12 +145,11 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
     /// @inheritdoc IRegistryCoordinator
     function deregisterOperator(
         bytes memory quorumNumbers
-    ) external onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
+    ) external override onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR) {
         // Check that the quorum numbers are M2 quorums
         for (uint256 i = 0; i < quorumNumbers.length; i++) {
             require(
-                !operatorSetsEnabled || _isM2Quorum(uint8(quorumNumbers[i])),
-                OperatorSetsAlreadyEnabled()
+                !operatorSetsEnabled || _isM2Quorum(uint8(quorumNumbers[i])), OperatorSetQuorum()
             );
         }
         _deregisterOperator({operator: msg.sender, quorumNumbers: quorumNumbers});
@@ -202,5 +203,15 @@ contract RegistryCoordinator is SlashingRegistryCoordinator, IRegistryCoordinato
         // quorumCount = 5 -> 011111 (31 in decimal)
         // This is a safe operation since we limit MAX_QUORUM_COUNT to 192
         return (1 << quorumCount) - 1;
+    }
+
+    /// @dev need to override function here since its defined in both these contracts
+    function owner()
+        public
+        view
+        override(SlashingRegistryCoordinator, ISlashingRegistryCoordinator)
+        returns (address)
+    {
+        return OwnableUpgradeable.owner();
     }
 }

@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import "../utils/MockAVSDeployer.sol";
 import {IStakeRegistryErrors} from "../../src/interfaces/IStakeRegistry.sol";
+import {ISlashingRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
 
 contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
     using BN254 for BN254.G1Point;
@@ -81,17 +82,19 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
     function test_getOperatorState_revert_quorumNotCreatedAtReferenceBlockNumber() public {
         cheats.roll(registrationBlockNumber);
-        ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator
-            .OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: defaultMaxOperatorCount,
             kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
             kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
         });
         uint96 minimumStake = 1;
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistry.StrategyParams({strategy: IStrategy(address(1000)), multiplier: 1e16});
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(1000)),
+            multiplier: 1e16
+        });
 
         cheats.prank(registryCoordinator.owner());
         registryCoordinator.createTotalDelegatedStakeQuorum(
@@ -223,17 +226,19 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         bytes32[] memory nonSignerOperatorIds = new bytes32[](1);
         nonSignerOperatorIds[0] = defaultOperatorId;
 
-        ISlashingRegistryCoordinator.OperatorSetParam memory operatorSetParams = ISlashingRegistryCoordinator
-            .OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: defaultMaxOperatorCount,
             kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
             kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
         });
         uint96 minimumStake = 1;
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistry.StrategyParams({strategy: IStrategy(address(1000)), multiplier: 1e16});
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(1000)),
+            multiplier: 1e16
+        });
 
         cheats.prank(registryCoordinator.owner());
         registryCoordinator.createTotalDelegatedStakeQuorum(
@@ -255,8 +260,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         uint256 quorumBitmapThree = 3;
 
         assertFalse(
-            registryCoordinator.operatorSetsEnabled(),
-            "operatorSetsEnabled should be false"
+            registryCoordinator.operatorSetsEnabled(), "operatorSetsEnabled should be false"
         );
 
         cheats.roll(registrationBlockNumber);

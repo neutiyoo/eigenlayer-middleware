@@ -3,8 +3,12 @@
 pragma solidity ^0.8.27;
 
 import {EjectionManager} from "../../src/EjectionManager.sol";
-import {IEjectionManager, IEjectionManagerErrors} from "../../src/interfaces/IEjectionManager.sol";
-
+import {
+    IEjectionManager,
+    IEjectionManagerErrors,
+    IEjectionManagerTypes
+} from "../../src/interfaces/IEjectionManager.sol";
+import {ISlashingRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
 import "../utils/MockAVSDeployer.sol";
 
 contract EjectionManagerUnitTests is MockAVSDeployer {
@@ -18,7 +22,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
     EjectionManager public ejectionManager;
     IEjectionManager public ejectionManagerImplementation;
 
-    IEjectionManager.QuorumEjectionParams[] public quorumEjectionParams;
+    IEjectionManagerTypes.QuorumEjectionParams[] public quorumEjectionParams;
 
     uint32 public ratelimitWindow = 1 days;
     uint16 public ejectableStakePercent = 1000;
@@ -26,7 +30,7 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
     function setUp() public virtual {
         for (uint8 i = 0; i < numQuorums; i++) {
             quorumEjectionParams.push(
-                IEjectionManager.QuorumEjectionParams({
+                IEjectionManagerTypes.QuorumEjectionParams({
                     rateLimitWindow: ratelimitWindow,
                     ejectableStakePercent: ejectableStakePercent
                 })
@@ -42,7 +46,8 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
             )
         );
 
-        ejectionManagerImplementation = new EjectionManager(registryCoordinator, stakeRegistry);
+        ejectionManagerImplementation =
+            new EjectionManager(IRegistryCoordinator(address(registryCoordinator)), stakeRegistry);
 
         address[] memory ejectors = new address[](1);
         ejectors[0] = ejector;
@@ -80,7 +85,10 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
             }
         }
 
-        assertEq(uint8(registryCoordinator.getOperatorStatus(defaultOperator)), uint8(ISlashingRegistryCoordinator.OperatorStatus.REGISTERED));
+        assertEq(
+            uint8(registryCoordinator.getOperatorStatus(defaultOperator)),
+            uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED)
+        );
 
         for (uint8 i = 0; i < numQuorums; i++) {
             for (uint8 j = 0; j < operatorsToEject; j++) {
@@ -92,7 +100,10 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         cheats.prank(ejector);
         ejectionManager.ejectOperators(operatorIds);
 
-        assertEq(uint8(registryCoordinator.getOperatorStatus(defaultOperator)), uint8(ISlashingRegistryCoordinator.OperatorStatus.DEREGISTERED));
+        assertEq(
+            uint8(registryCoordinator.getOperatorStatus(defaultOperator)),
+            uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED)
+        );
     }
 
     function testEjectOperators_MultipleOperatorInsideRatelimit() public {
@@ -110,8 +121,11 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
             }
         }
 
-        for(uint8 i = 0; i < operatorsToEject; i++) {
-            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinator.OperatorStatus.REGISTERED));
+        for (uint8 i = 0; i < operatorsToEject; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED)
+            );
         }
 
         for (uint8 i = 0; i < numQuorums; i++) {
@@ -124,8 +138,11 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         cheats.prank(ejector);
         ejectionManager.ejectOperators(operatorIds);
 
-        for(uint8 i = 0; i < operatorsToEject; i++) {
-            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinator.OperatorStatus.DEREGISTERED));
+        for (uint8 i = 0; i < operatorsToEject; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED)
+            );
         }
     }
 
@@ -145,8 +162,11 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
             }
         }
 
-        for(uint8 i = 0; i < operatorsToEject; i++) {
-            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinator.OperatorStatus.REGISTERED));
+        for (uint8 i = 0; i < operatorsToEject; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED)
+            );
         }
 
         for (uint8 i = 0; i < numQuorums; i++) {
@@ -159,12 +179,18 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         cheats.prank(ejector);
         ejectionManager.ejectOperators(operatorIds);
 
-        for(uint8 i = 0; i < operatorsCanEject; i++) {
-            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinator.OperatorStatus.DEREGISTERED));
+        for (uint8 i = 0; i < operatorsCanEject; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED)
+            );
         }
 
-        for(uint8 i = operatorsCanEject; i < operatorsToEject; i++) {
-            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinator.OperatorStatus.REGISTERED));
+        for (uint8 i = operatorsCanEject; i < operatorsToEject; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED)
+            );
         }
     }
 
@@ -183,8 +209,11 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
             }
         }
 
-        for(uint8 i = 0; i < operatorsToEject; i++) {
-            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinator.OperatorStatus.REGISTERED));
+        for (uint8 i = 0; i < operatorsToEject; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED)
+            );
         }
 
         for (uint8 i = 0; i < numQuorums; i++) {
@@ -197,8 +226,11 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         cheats.prank(ejector);
         ejectionManager.ejectOperators(operatorIds);
 
-        for(uint8 i = 0; i < operatorsToEject; i++) {
-            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinator.OperatorStatus.DEREGISTERED));
+        for (uint8 i = 0; i < operatorsToEject; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED)
+            );
         }
 
         cheats.warp(block.timestamp + (ratelimitWindow / 2));
@@ -213,8 +245,15 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
             }
         }
 
-        for(uint8 i = 0; i < operatorsToEject; i++) {
-            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, operatorsToEject + i))), uint8(ISlashingRegistryCoordinator.OperatorStatus.REGISTERED));
+        for (uint8 i = 0; i < operatorsToEject; i++) {
+            assertEq(
+                uint8(
+                    registryCoordinator.getOperatorStatus(
+                        _incrementAddress(defaultOperator, operatorsToEject + i)
+                    )
+                ),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED)
+            );
         }
 
         for (uint8 i = 0; i < numQuorums; i++) {
@@ -227,8 +266,15 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         cheats.prank(ejector);
         ejectionManager.ejectOperators(operatorIds);
 
-        for(uint8 i = 0; i < operatorsToEject; i++) {
-            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, operatorsToEject + i))), uint8(ISlashingRegistryCoordinator.OperatorStatus.DEREGISTERED));
+        for (uint8 i = 0; i < operatorsToEject; i++) {
+            assertEq(
+                uint8(
+                    registryCoordinator.getOperatorStatus(
+                        _incrementAddress(defaultOperator, operatorsToEject + i)
+                    )
+                ),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED)
+            );
         }
     }
 
@@ -254,8 +300,11 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
             }
         }
 
-        for(uint8 i = 0; i < operatorsToEject; i++) {
-            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinator.OperatorStatus.REGISTERED));
+        for (uint8 i = 0; i < operatorsToEject; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED)
+            );
         }
 
         for (uint8 i = 0; i < numQuorums; i++) {
@@ -268,8 +317,11 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         cheats.prank(ejector);
         ejectionManager.ejectOperators(operatorIds);
 
-        for(uint8 i = 0; i < operatorsToEject; i++) {
-            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinator.OperatorStatus.DEREGISTERED));
+        for (uint8 i = 0; i < operatorsToEject; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED)
+            );
         }
     }
 
@@ -288,8 +340,11 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
             }
         }
 
-        for(uint8 i = 0; i < operatorsToEject; i++) {
-            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinator.OperatorStatus.REGISTERED));
+        for (uint8 i = 0; i < operatorsToEject; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED)
+            );
         }
 
         for (uint8 i = 0; i < numQuorums; i++) {
@@ -302,8 +357,11 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         cheats.prank(registryCoordinatorOwner);
         ejectionManager.ejectOperators(operatorIds);
 
-        for(uint8 i = 0; i < operatorsToEject; i++) {
-            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinator.OperatorStatus.DEREGISTERED));
+        for (uint8 i = 0; i < operatorsToEject; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED)
+            );
         }
     }
 
@@ -325,8 +383,11 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         cheats.prank(defaultOperator);
         registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(MAX_QUORUM_BITMAP));
 
-        for(uint8 i = 1; i < operatorsToEject; i++) {
-            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinator.OperatorStatus.REGISTERED));
+        for (uint8 i = 1; i < operatorsToEject; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.REGISTERED)
+            );
         }
 
         for (uint8 i = 0; i < numQuorums; i++) {
@@ -339,8 +400,11 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         cheats.prank(ejector);
         ejectionManager.ejectOperators(operatorIds);
 
-        for(uint8 i = 0; i < operatorsToEject; i++) {
-            assertEq(uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))), uint8(ISlashingRegistryCoordinator.OperatorStatus.DEREGISTERED));
+        for (uint8 i = 0; i < operatorsToEject; i++) {
+            assertEq(
+                uint8(registryCoordinator.getOperatorStatus(_incrementAddress(defaultOperator, i))),
+                uint8(ISlashingRegistryCoordinatorTypes.OperatorStatus.DEREGISTERED)
+            );
         }
     }
 
@@ -348,8 +412,8 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         uint8 quorumNumber = 0;
         ratelimitWindow = 2 days;
         ejectableStakePercent = 2000;
-        IEjectionManager.QuorumEjectionParams memory _quorumEjectionParams = IEjectionManager
-            .QuorumEjectionParams({
+        IEjectionManagerTypes.QuorumEjectionParams memory _quorumEjectionParams =
+        IEjectionManagerTypes.QuorumEjectionParams({
             rateLimitWindow: ratelimitWindow,
             ejectableStakePercent: ejectableStakePercent
         });
@@ -393,13 +457,13 @@ contract EjectionManagerUnitTests is MockAVSDeployer {
         cheats.prank(registryCoordinatorOwner);
         ejectionManager.setQuorumEjectionParams(
             0,
-            IEjectionManager.QuorumEjectionParams({
+            IEjectionManagerTypes.QuorumEjectionParams({
                 rateLimitWindow: 7 days,
                 ejectableStakePercent: 9999
             })
         );
 
-        stakeRegistry.recordTotalStakeUpdate(1, 2_000_000_000 * 1 ether);
+        stakeRegistry.recordTotalStakeUpdate(1, 2000000000 * 1 ether);
 
         ejectionManager.amountEjectableForQuorum(1);
     }

@@ -6,16 +6,18 @@ import "forge-std/Test.sol";
 import "test/integration/IntegrationDeployer.t.sol";
 import "test/ffi/util/G2Operations.sol";
 import "test/integration/utils/BitmapStrings.t.sol";
+import {ISlashingRegistryCoordinatorTypes} from
+    "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 
 contract Constants {
-    /// Quorum Config:
+    /// IECDSAStakeRegistryTypes.Quorum Config:
 
     /// @dev Default OperatorSetParam values used to initialize quorums
     /// NOTE: This means each quorum has an operator limit of MAX_OPERATOR_COUNT by default
     ///       This is a low number because each operator receives its own BLS keypair, which
     ///       is very slow to generate.
     uint32 constant MAX_OPERATOR_COUNT = 5;
-    uint16 constant KICK_BIPS_OPERATOR_STAKE = 15_000;
+    uint16 constant KICK_BIPS_OPERATOR_STAKE = 15000;
     uint16 constant KICK_BIPS_TOTAL_STAKE = 150;
 
     /// Other:
@@ -26,7 +28,7 @@ contract Constants {
 
     uint256 constant MAX_QUORUM_COUNT = 192; // From RegistryCoordinator.MAX_QUORUM_COUNT
 
-    uint16 internal constant BIPS_DENOMINATOR = 10_000;
+    uint16 internal constant BIPS_DENOMINATOR = 10000;
 }
 
 contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
@@ -73,7 +75,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     /// (See _fetchKeypair)
     uint256 fetchIdx = 0;
     uint256[] privKeys;
-    IBLSApkRegistry.PubkeyRegistrationParams[] pubkeys;
+    IBLSApkRegistryTypes.PubkeyRegistrationParams[] pubkeys;
 
     /// @dev Current initialized quorums are tracked here:
     uint256 quorumCount;
@@ -93,7 +95,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
      */
     constructor() {
         for (uint256 i = 0; i < NUM_GENERATED_OPERATORS; i++) {
-            IBLSApkRegistry.PubkeyRegistrationParams memory pubkey;
+            IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkey;
             uint256 privKey = uint256(keccak256(abi.encodePacked(i + 1)));
 
             pubkey.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
@@ -158,7 +160,8 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         emit log_named_uint("_configRand: number of quorums being initialized", quorumCount);
 
         // Default OperatorSetParams for all quorums
-        ISlashingRegistryCoordinator.OperatorSetParam memory operatorSet = ISlashingRegistryCoordinator.OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSet =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: MAX_OPERATOR_COUNT,
             kickBIPsOfOperatorStake: KICK_BIPS_OPERATOR_STAKE,
             kickBIPsOfTotalStake: KICK_BIPS_TOTAL_STAKE
@@ -166,7 +169,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
 
         // Initialize each quorum
         for (uint256 i = 0; i < quorumCount; i++) {
-            IStakeRegistry.StrategyParams[] memory strategyParams = _randStrategyParams();
+            IStakeRegistryTypes.StrategyParams[] memory strategyParams = _randStrategyParams();
             uint96 minimumStake = _randMinStake();
 
             emit log_named_uint("_configRand: creating quorum", i);
@@ -232,7 +235,8 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         string memory name
     ) internal returns (User, IStrategy[] memory, uint256[] memory) {
         // Create User contract and give it a unique BLS keypair
-        (uint256 privKey, IBLSApkRegistry.PubkeyRegistrationParams memory pubkey) = _fetchKeypair();
+        (uint256 privKey, IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkey) =
+            _fetchKeypair();
 
         // Use userFlags to pick the kind of user to generate
         User user;
@@ -317,8 +321,8 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         for (uint256 i = 0; i < churnQuorums.length; i++) {
             uint8 quorum = uint8(churnQuorums[i]);
 
-            ISlashingRegistryCoordinator.OperatorSetParam memory params
-                = registryCoordinator.getOperatorSetParams(quorum);
+            ISlashingRegistryCoordinatorTypes.OperatorSetParam memory params =
+                registryCoordinator.getOperatorSetParams(quorum);
 
             // Sanity check - make sure we're at the operator cap
             uint32 curNumOperators = indexRegistry.totalOperatorsForQuorum(quorum);
@@ -364,7 +368,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     /// From RegistryCoordinator._individualKickThreshold
     function _individualKickThreshold(
         uint96 operatorStake,
-        ISlashingRegistryCoordinator.OperatorSetParam memory setParams
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory setParams
     ) internal pure returns (uint96) {
         return operatorStake * setParams.kickBIPsOfOperatorStake / BIPS_DENOMINATOR;
     }
@@ -372,7 +376,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     /// From RegistryCoordinator._totalKickThreshold
     function _totalKickThreshold(
         uint96 totalStake,
-        ISlashingRegistryCoordinator.OperatorSetParam memory setParams
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory setParams
     ) internal pure returns (uint96) {
         return totalStake * setParams.kickBIPsOfTotalStake / BIPS_DENOMINATOR;
     }
@@ -421,7 +425,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
 
     function _fetchKeypair()
         internal
-        returns (uint256, IBLSApkRegistry.PubkeyRegistrationParams memory)
+        returns (uint256, IBLSApkRegistryTypes.PubkeyRegistrationParams memory)
     {
         // should probably just generate another keypair at this point
         if (fetchIdx == privKeys.length) {
@@ -431,7 +435,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
         }
 
         uint256 privKey = privKeys[fetchIdx];
-        IBLSApkRegistry.PubkeyRegistrationParams memory pubkey = pubkeys[fetchIdx];
+        IBLSApkRegistryTypes.PubkeyRegistrationParams memory pubkey = pubkeys[fetchIdx];
         fetchIdx++;
 
         return (privKey, pubkey);
@@ -527,7 +531,7 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
     /// NOTE: This should only be used when creating a quorum for the first time. If you're
     /// selecting strategies to add after the quorum has been initialized, this is likely to
     /// return duplicates.
-    function _randStrategyParams() private returns (IStakeRegistry.StrategyParams[] memory) {
+    function _randStrategyParams() private returns (IStakeRegistryTypes.StrategyParams[] memory) {
         uint256 strategyFlag = _randValue(numStrategyFlags);
         uint256 strategyCount;
 
@@ -547,11 +551,11 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
             revert("_randStrategyCount: flag not recognized");
         }
 
-        IStakeRegistry.StrategyParams[] memory params =
-            new IStakeRegistry.StrategyParams[](strategyCount);
+        IStakeRegistryTypes.StrategyParams[] memory params =
+            new IStakeRegistryTypes.StrategyParams[](strategyCount);
 
         for (uint256 i = 0; i < params.length; i++) {
-            params[i] = IStakeRegistry.StrategyParams({
+            params[i] = IStakeRegistryTypes.StrategyParams({
                 strategy: allStrats[i],
                 multiplier: DEFAULT_STRATEGY_MULTIPLIER
             });
@@ -564,8 +568,10 @@ contract IntegrationConfig is IntegrationDeployer, G2Operations, Constants {
      * @dev Uses _randFillType to determine how many operators to register for a quorum initially
      * @return The number of operators to register
      */
-    function _randInitialOperators(ISlashingRegistryCoordinator.OperatorSetParam memory operatorSet) private returns (uint) {
-        uint fillTypeFlag = _randValue(fillTypeFlags);
+    function _randInitialOperators(
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSet
+    ) private returns (uint256) {
+        uint256 fillTypeFlag = _randValue(fillTypeFlags);
 
         if (fillTypeFlag == EMPTY) {
             return 0;

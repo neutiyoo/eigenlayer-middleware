@@ -12,7 +12,7 @@ import {
 } from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 
 import {ISlashingRegistryCoordinator} from "./interfaces/ISlashingRegistryCoordinator.sol";
-import {IStakeRegistry, StakeType} from "./interfaces/IStakeRegistry.sol";
+import {IStakeRegistry, IStakeRegistryTypes} from "./interfaces/IStakeRegistry.sol";
 
 /**
  * @title Storage variables for the `StakeRegistry` contract.
@@ -25,7 +25,7 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     /// @notice Maximum length of dynamic arrays in the `strategyParams` mapping.
     uint8 public constant MAX_WEIGHING_FUNCTION_LENGTH = 32;
     /// @notice Constant used as a divisor in dealing with BIPS amounts.
-    uint256 internal constant MAX_BIPS = 10_000;
+    uint256 internal constant MAX_BIPS = 10000;
 
     /// @notice The address of the Delegation contract for EigenLayer.
     IDelegationManager public immutable delegation;
@@ -58,8 +58,8 @@ abstract contract StakeRegistryStorage is IStakeRegistry {
     /// @notice mapping from quorum number to the list of strategies considered for that specific quorum
     mapping(uint8 quorumNumber => IStrategy[]) public strategiesPerQuorum;
 
-    /// @notice mapping from quorum number to the StakeType for that specific quorum
-    mapping(uint8 quorumNumber => StakeType) public stakeTypePerQuorum;
+    /// @notice mapping from quorum number to the IStakeRegistryTypes.StakeType for that specific quorum
+    mapping(uint8 quorumNumber => IStakeRegistryTypes.StakeType) public stakeTypePerQuorum;
 
     /// @notice mapping from quorum number to the slashable stake look ahead time (in blocks)
     mapping(uint8 quorumNumber => uint32) public slashableStakeLookAheadPerQuorum;
