@@ -32,8 +32,6 @@ import {LibMergeSort} from "./libraries/LibMergeSort.sol";
 abstract contract ServiceManagerBase is ServiceManagerBaseStorage {
     using BitmapUtils for *;
 
-    uint256 public constant SLASHER_PROPOSAL_DELAY = 7 days;
-
     /// @notice when applied to a function, only allows the RegistryCoordinator to call it
     modifier onlyRegistryCoordinator() {
         require(msg.sender == address(_registryCoordinator), OnlyRegistryCoordinator());
