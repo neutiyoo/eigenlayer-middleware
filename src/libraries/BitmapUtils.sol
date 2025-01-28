@@ -1,12 +1,19 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 /**
  * @title Library for Bitmap utilities such as converting between an array of bytes and a bitmap and finding the number of 1s in a bitmap.
  * @author Layr Labs, Inc.
  */
 library BitmapUtils {
+    /// @dev Thrown when the input byte array is too long to be converted to a bitmap
+    error BytesArrayLengthTooLong();
+    /// @dev Thrown when the input byte array is not strictly ordered
+    error BytesArrayNotOrdered();
+    /// @dev Thrown when the bitmap value is too large
+    error BitmapValueTooLarge();
+
     /**
      * @notice Byte arrays are meant to contain unique bytes.
      * If the array length exceeds 256, then it's impossible for all entries to be unique.
@@ -22,10 +29,11 @@ library BitmapUtils {
      * @dev This function will eventually revert in the event that the `orderedBytesArray` is not properly ordered (in ascending order).
      * @dev This function will also revert if the `orderedBytesArray` input contains any duplicate entries (i.e. duplicate bytes).
      */
-    function orderedBytesArrayToBitmap(bytes memory orderedBytesArray) internal pure returns (uint256) {
+    function orderedBytesArrayToBitmap(
+        bytes memory orderedBytesArray
+    ) internal pure returns (uint256) {
         // sanity-check on input. a too-long input would fail later on due to having duplicate entry(s)
-        require(orderedBytesArray.length <= MAX_BYTE_ARRAY_LENGTH,
-            "BitmapUtils.orderedBytesArrayToBitmap: orderedBytesArray is too long");
+        require(orderedBytesArray.length <= MAX_BYTE_ARRAY_LENGTH, BytesArrayLengthTooLong());
 
         // return empty bitmap early if length of array is 0
         if (orderedBytesArray.length == 0) {
@@ -46,7 +54,7 @@ library BitmapUtils {
             // construct a single-bit mask from the numerical value of the next byte of the array
             bitMask = uint256(1 << uint8(orderedBytesArray[i]));
             // check strictly ascending array ordering by comparing the mask to the bitmap so far (revert if mask isn't greater than bitmap)
-            require(bitMask > bitmap, "BitmapUtils.orderedBytesArrayToBitmap: orderedBytesArray is not ordered");
+            require(bitMask > bitmap, BytesArrayNotOrdered());
             // add the entry to the bitmap
             bitmap = (bitmap | bitMask);
         }
@@ -59,12 +67,13 @@ library BitmapUtils {
      * @param bitUpperBound The exclusive largest bit. Each bit must be strictly less than this value.
      * @dev Reverts if bitmap contains a bit greater than or equal to `bitUpperBound`
      */
-    function orderedBytesArrayToBitmap(bytes memory orderedBytesArray, uint8 bitUpperBound) internal pure returns (uint256) {
+    function orderedBytesArrayToBitmap(
+        bytes memory orderedBytesArray,
+        uint8 bitUpperBound
+    ) internal pure returns (uint256) {
         uint256 bitmap = orderedBytesArrayToBitmap(orderedBytesArray);
 
-        require((1 << bitUpperBound) > bitmap, 
-            "BitmapUtils.orderedBytesArrayToBitmap: bitmap exceeds max value"
-        );
+        require((1 << bitUpperBound) > bitmap, BitmapValueTooLarge());
 
         return bitmap;
     }
@@ -76,7 +85,9 @@ library BitmapUtils {
      * @dev This function returns 'true' for the edge case of the `bytesArray` having zero length.
      * It also returns 'false' early for arrays with length in excess of MAX_BYTE_ARRAY_LENGTH (i.e. so long that they cannot be strictly ordered)
      */
-    function isArrayStrictlyAscendingOrdered(bytes calldata bytesArray) internal pure returns (bool) {
+    function isArrayStrictlyAscendingOrdered(
+        bytes calldata bytesArray
+    ) internal pure returns (bool) {
         // Return early if the array is too long, or has a length of 0
         if (bytesArray.length > MAX_BYTE_ARRAY_LENGTH) {
             return false;
@@ -95,11 +106,11 @@ library BitmapUtils {
             if (uint256(uint8(bytesArray[i])) <= uint256(uint8(singleByte))) {
                 return false;
             }
-            
+
             // Pull the next byte out of the array
             singleByte = bytesArray[i];
         }
-        
+
         return true;
     }
 
@@ -109,7 +120,9 @@ library BitmapUtils {
      * @return bytesArray The resulting bitmap array of bytes.
      * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap
      */
-    function bitmapToBytesArray(uint256 bitmap) internal pure returns (bytes memory /*bytesArray*/) {
+    function bitmapToBytesArray(
+        uint256 bitmap
+    ) internal pure returns (bytes memory /*bytesArray*/ ) {
         // initialize an empty uint256 to be used as a bitmask inside the loop
         uint256 bitMask;
         // allocate only the needed amount of memory
@@ -129,14 +142,18 @@ library BitmapUtils {
                 // if the i-th bit is flipped, then add a byte encoding the value 'i' to the `bytesArray`
                 bytesArray[arrayIndex] = bytes1(uint8(i));
                 // increment the bytesArray slot since we've assigned one more byte of memory
-                unchecked{ ++arrayIndex; }
+                unchecked {
+                    ++arrayIndex;
+                }
             }
         }
         return bytesArray;
     }
 
     /// @return count number of ones in binary representation of `n`
-    function countNumOnes(uint256 n) internal pure returns (uint16) {
+    function countNumOnes(
+        uint256 n
+    ) internal pure returns (uint16) {
         uint16 count = 0;
         while (n > 0) {
             n &= (n - 1); // Clear the least significant bit (turn off the rightmost set bit).
@@ -149,9 +166,9 @@ library BitmapUtils {
     function isSet(uint256 bitmap, uint8 bit) internal pure returns (bool) {
         return 1 == ((bitmap >> bit) & 1);
     }
-    
+
     /**
-     * @notice Returns a copy of `bitmap` with `bit` set. 
+     * @notice Returns a copy of `bitmap` with `bit` set.
      * @dev IMPORTANT: we're dealing with stack values here, so this doesn't modify
      * the original bitmap. Using this correctly requires an assignment statement:
      * `bitmap = bitmap.setBit(bit);`
@@ -163,7 +180,9 @@ library BitmapUtils {
     /**
      * @notice Returns true if `bitmap` has no set bits
      */
-    function isEmpty(uint256 bitmap) internal pure returns (bool) {
+    function isEmpty(
+        uint256 bitmap
+    ) internal pure returns (bool) {
         return bitmap == 0;
     }
 

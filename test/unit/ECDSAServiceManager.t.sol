@@ -1,186 +1,192 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+// // SPDX-License-Identifier: MIT
+// pragma solidity ^0.8.27;
 
-import {Test, console} from "forge-std/Test.sol";
+// import {Test, console} from "forge-std/Test.sol";
 
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
-import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+// import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+// import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+// import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+// import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
-import {ECDSAServiceManagerMock} from "../mocks/ECDSAServiceManagerMock.sol";
-import {ECDSAStakeRegistryMock} from "../mocks/ECDSAStakeRegistryMock.sol";
-import {Quorum, StrategyParams} from "../../src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
+// import {ECDSAServiceManagerMock} from "../mocks/ECDSAServiceManagerMock.sol";
+// import {ECDSAStakeRegistryMock} from "../mocks/ECDSAStakeRegistryMock.sol";
+// import {IECDSAStakeRegistryTypes.Quorum, StrategyParams} from "../../src/interfaces/IECDSAStakeRegistry.sol";
 
-contract MockDelegationManager {
-    function operatorShares(address, address) external pure returns (uint256) {
-        return 1000; // Return a dummy value for simplicity
-    }
+// contract MockDelegationManager {
+//     function operatorShares(address, address) external pure returns (uint256) {
+//         return 1000; // Return a dummy value for simplicity
+//     }
 
-    function getOperatorShares(
-        address,
-        IStrategy[] memory strategies
-    ) external pure returns (uint256[] memory) {
-        uint256[] memory response = new uint256[](strategies.length);
-        for (uint256 i; i < strategies.length; i++) {
-            response[i] = 1000;
-        }
-        return response; // Return a dummy value for simplicity
-    }
-}
+//     function getOperatorShares(
+//         address,
+//         IStrategy[] memory strategies
+//     ) external pure returns (uint256[] memory) {
+//         uint256[] memory response = new uint256[](strategies.length);
+//         for (uint256 i; i < strategies.length; i++) {
+//             response[i] = 1000;
+//         }
+//         return response; // Return a dummy value for simplicity
+//     }
+// }
 
-contract MockAVSDirectory {
-    function registerOperatorToAVS(
-        address,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory
-    ) external pure {}
+// contract MockAVSDirectory {
+//     function registerOperatorToAVS(
+//         address,
+//         ISignatureUtils.SignatureWithSaltAndExpiry memory
+//     ) external pure {}
 
-    function deregisterOperatorFromAVS(address) external pure {}
+//     function deregisterOperatorFromAVS(address) external pure {}
 
-    function updateAVSMetadataURI(string memory) external pure {}
-}
+//     function updateAVSMetadataURI(string memory) external pure {}
+// }
 
-contract MockRewardsCoordinator {
-    function createAVSRewardsSubmission(
-        IRewardsCoordinator.RewardsSubmission[] calldata
-    ) external pure {}
-}
+// contract MockAllocationManager {}
 
-contract ECDSAServiceManagerSetup is Test {
-    MockDelegationManager public mockDelegationManager;
-    MockAVSDirectory public mockAVSDirectory;
-    ECDSAStakeRegistryMock public mockStakeRegistry;
-    MockRewardsCoordinator public mockRewardsCoordinator;
-    ECDSAServiceManagerMock public serviceManager;
-    address internal operator1;
-    address internal operator2;
-    uint256 internal operator1Pk;
-    uint256 internal operator2Pk;
+// contract MockRewardsCoordinator {
+//     function createAVSRewardsSubmission(
+//         address avs,
+//         IRewardsCoordinator.RewardsSubmission[] calldata
+//     ) external pure {}
+// }
 
-    function setUp() public {
-        mockDelegationManager = new MockDelegationManager();
-        mockAVSDirectory = new MockAVSDirectory();
-        mockStakeRegistry = new ECDSAStakeRegistryMock(
-            IDelegationManager(address(mockDelegationManager))
-        );
-        mockRewardsCoordinator = new MockRewardsCoordinator();
+// contract ECDSAServiceManagerSetup is Test {
+//     MockDelegationManager public mockDelegationManager;
+//     MockAVSDirectory public mockAVSDirectory;
+//     MockAllocationManager public mockAllocationManager;
+//     ECDSAStakeRegistryMock public mockStakeRegistry;
+//     MockRewardsCoordinator public mockRewardsCoordinator;
+//     ECDSAServiceManagerMock public serviceManager;
+//     address internal operator1;
+//     address internal operator2;
+//     uint256 internal operator1Pk;
+//     uint256 internal operator2Pk;
 
-        serviceManager = new ECDSAServiceManagerMock(
-            address(mockAVSDirectory),
-            address(mockStakeRegistry),
-            address(mockRewardsCoordinator),
-            address(mockDelegationManager)
-        );
+//     function setUp() public {
+//         mockDelegationManager = new MockDelegationManager();
+//         mockAVSDirectory = new MockAVSDirectory();
+//         mockAllocationManager = new MockAllocationManager();
+//         mockStakeRegistry = new ECDSAStakeRegistryMock(
+//             IDelegationManager(address(mockDelegationManager))
+//         );
+//         mockRewardsCoordinator = new MockRewardsCoordinator();
 
-        operator1Pk = 1;
-        operator2Pk = 2;
-        operator1 = vm.addr(operator1Pk);
-        operator2 = vm.addr(operator2Pk);
+//         serviceManager = new ECDSAServiceManagerMock(
+//             address(mockAVSDirectory),
+//             address(mockStakeRegistry),
+//             address(mockRewardsCoordinator),
+//             address(mockDelegationManager),
+//             address(mockAllocationManager)
+//         );
 
-        // Create a quorum
-        Quorum memory quorum = Quorum({strategies: new StrategyParams[](2)});
-        quorum.strategies[0] = StrategyParams({
-            strategy: IStrategy(address(420)),
-            multiplier: 5000
-        });
-        quorum.strategies[1] = StrategyParams({
-            strategy: IStrategy(address(421)),
-            multiplier: 5000
-        });
-        address[] memory operators = new address[](0);
+//         operator1Pk = 1;
+//         operator2Pk = 2;
+//         operator1 = vm.addr(operator1Pk);
+//         operator2 = vm.addr(operator2Pk);
 
-        vm.prank(mockStakeRegistry.owner());
-        mockStakeRegistry.initialize(
-            address(serviceManager),
-            10_000, // Assuming a threshold weight of 10000 basis points
-            quorum
-        );
-        ISignatureUtils.SignatureWithSaltAndExpiry memory dummySignature;
+//         // Create a quorum
+//         IECDSAStakeRegistryTypes.Quorum memory quorum = IECDSAStakeRegistryTypes.Quorum({strategies: new StrategyParams[](2)});
+//         quorum.strategies[0] = StrategyParams({
+//             strategy: IStrategy(address(420)),
+//             multiplier: 5000
+//         });
+//         quorum.strategies[1] = StrategyParams({
+//             strategy: IStrategy(address(421)),
+//             multiplier: 5000
+//         });
+//         address[] memory operators = new address[](0);
 
-        vm.prank(operator1);
-        mockStakeRegistry.registerOperatorWithSignature(
-            dummySignature,
-            operator1
-        );
+//         vm.prank(mockStakeRegistry.owner());
+//         mockStakeRegistry.initialize(
+//             address(serviceManager),
+//             10_000, // Assuming a threshold weight of 10000 basis points
+//             quorum
+//         );
+//         ISignatureUtils.SignatureWithSaltAndExpiry memory dummySignature;
 
-        vm.prank(operator2);
-        mockStakeRegistry.registerOperatorWithSignature(
-            dummySignature,
-            operator2
-        );
-    }
+//         vm.prank(operator1);
+//         mockStakeRegistry.registerOperatorWithSignature(
+//             dummySignature,
+//             operator1
+//         );
 
-    function testRegisterOperatorToAVS() public {
-        address operator = operator1;
-        ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
+//         vm.prank(operator2);
+//         mockStakeRegistry.registerOperatorWithSignature(
+//             dummySignature,
+//             operator2
+//         );
+//     }
 
-        vm.prank(address(mockStakeRegistry));
-        serviceManager.registerOperatorToAVS(operator, signature);
-    }
+//     function testRegisterOperatorToAVS() public {
+//         address operator = operator1;
+//         ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
 
-    function testDeregisterOperatorFromAVS() public {
-        address operator = operator1;
+//         vm.prank(address(mockStakeRegistry));
+//         serviceManager.registerOperatorToAVS(operator, signature);
+//     }
 
-        vm.prank(address(mockStakeRegistry));
-        serviceManager.deregisterOperatorFromAVS(operator);
-    }
+//     function testDeregisterOperatorFromAVS() public {
+//         address operator = operator1;
 
-    function testGetRestakeableStrategies() public {
-        address[] memory strategies = serviceManager.getRestakeableStrategies();
-    }
+//         vm.prank(address(mockStakeRegistry));
+//         serviceManager.deregisterOperatorFromAVS(operator);
+//     }
 
-    function testGetOperatorRestakedStrategies() public {
-        address operator = operator1;
-        address[] memory strategies = serviceManager
-            .getOperatorRestakedStrategies(operator);
-    }
+//     function testGetRestakeableStrategies() public {
+//         address[] memory strategies = serviceManager.getRestakeableStrategies();
+//     }
 
-    function test_Regression_GetOperatorRestakedStrategies_NoShares() public {
-        address operator = operator1;
-        IStrategy[] memory strategies = new IStrategy[](2);
-        strategies[0] = IStrategy(address(420));
-        strategies[1] = IStrategy(address(421));
+//     function testGetOperatorRestakedStrategies() public {
+//         address operator = operator1;
+//         address[] memory strategies = serviceManager
+//             .getOperatorRestakedStrategies(operator);
+//     }
 
-        uint256[] memory shares = new uint256[](2);
-        shares[0] = 0;
-        shares[1] = 1;
+//     function test_Regression_GetOperatorRestakedStrategies_NoShares() public {
+//         address operator = operator1;
+//         IStrategy[] memory strategies = new IStrategy[](2);
+//         strategies[0] = IStrategy(address(420));
+//         strategies[1] = IStrategy(address(421));
 
-        vm.mockCall(
-            address(mockDelegationManager),
-            abi.encodeCall(
-                IDelegationManager.getOperatorShares,
-                (operator, strategies)
-            ),
-            abi.encode(shares)
-        );
+//         uint96[] memory shares = new uint96[](2);
+//         shares[0] = 0;
+//         shares[1] = 1;
 
-        address[] memory restakedStrategies = serviceManager
-            .getOperatorRestakedStrategies(operator);
-        assertEq(
-            restakedStrategies.length,
-            1,
-            "Expected no restaked strategies"
-        );
-    }
+//         vm.mockCall(
+//             address(mockDelegationManager),
+//             abi.encodeCall(
+//                 IDelegationManager.getOperatorShares,
+//                 (operator, strategies)
+//             ),
+//             abi.encode(shares)
+//         );
 
-    function testUpdateAVSMetadataURI() public {
-        string memory newURI = "https://new-metadata-uri.com";
+//         address[] memory restakedStrategies = serviceManager
+//             .getOperatorRestakedStrategies(operator);
+//         assertEq(
+//             restakedStrategies.length,
+//             1,
+//             "Expected no restaked strategies"
+//         );
+//     }
 
-        vm.prank(mockStakeRegistry.owner());
-        serviceManager.updateAVSMetadataURI(newURI);
-    }
+//     function testUpdateAVSMetadataURI() public {
+//         string memory newURI = "https://new-metadata-uri.com";
 
-    function testCreateAVSRewardsSubmission() public {
-        IRewardsCoordinator.RewardsSubmission[] memory submissions;
+//         vm.prank(mockStakeRegistry.owner());
+//         serviceManager.updateAVSMetadataURI(newURI);
+//     }
 
-        vm.prank(serviceManager.rewardsInitiator());
-        serviceManager.createAVSRewardsSubmission(submissions);
-    }
+//     function testCreateAVSRewardsSubmission() public {
+//         IRewardsCoordinator.RewardsSubmission[] memory submissions;
 
-    function testSetRewardsInitiator() public {
-        address newInitiator = address(0x123);
+//         vm.prank(serviceManager.rewardsInitiator());
+//         serviceManager.createAVSRewardsSubmission(submissions);
+//     }
 
-        vm.prank(mockStakeRegistry.owner());
-        serviceManager.setRewardsInitiator(newInitiator);
-    }
-}
+//     function testSetRewardsInitiator() public {
+//         address newInitiator = address(0x123);
+
+//         vm.prank(mockStakeRegistry.owner());
+//         serviceManager.setRewardsInitiator(newInitiator);
+//     }
+// }

@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {Slasher} from "eigenlayer-contracts/src/contracts/core/Slasher.sol";
-import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
@@ -13,30 +11,43 @@ import {BitmapUtils} from "../../src/libraries/BitmapUtils.sol";
 import {BN254} from "../../src/libraries/BN254.sol";
 
 import {OperatorStateRetriever} from "../../src/OperatorStateRetriever.sol";
+import {SlashingRegistryCoordinator} from "../../src/SlashingRegistryCoordinator.sol";
 import {RegistryCoordinator} from "../../src/RegistryCoordinator.sol";
 import {RegistryCoordinatorHarness} from "../harnesses/RegistryCoordinatorHarness.t.sol";
 import {BLSApkRegistry} from "../../src/BLSApkRegistry.sol";
 import {ServiceManagerMock} from "../mocks/ServiceManagerMock.sol";
-import {StakeRegistry} from "../../src/StakeRegistry.sol";
+import {StakeRegistry, IStakeRegistryTypes} from "../../src/StakeRegistry.sol";
 import {IndexRegistry} from "../../src/IndexRegistry.sol";
 import {IBLSApkRegistry} from "../../src/interfaces/IBLSApkRegistry.sol";
 import {IStakeRegistry} from "../../src/interfaces/IStakeRegistry.sol";
 import {IIndexRegistry} from "../../src/interfaces/IIndexRegistry.sol";
 import {IRegistryCoordinator} from "../../src/interfaces/IRegistryCoordinator.sol";
+import {
+    ISlashingRegistryCoordinatorTypes,
+    ISlashingRegistryCoordinatorTypes
+} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
+
+import {ISlashingRegistryCoordinator} from "../../src/interfaces/ISlashingRegistryCoordinator.sol";
 import {IServiceManager} from "../../src/interfaces/IServiceManager.sol";
 import {SocketRegistry} from "../../src/SocketRegistry.sol";
 
 import {StrategyManagerMock} from "eigenlayer-contracts/src/test/mocks/StrategyManagerMock.sol";
-import {EigenPodManagerMock} from "eigenlayer-contracts/src/test/mocks/EigenPodManagerMock.sol";
+import {EigenPodManagerMock} from "../mocks/EigenPodManagerMock.sol";
 import {AVSDirectoryMock} from "../mocks/AVSDirectoryMock.sol";
+import {AllocationManagerMock} from "../mocks/AllocationManagerMock.sol";
 import {DelegationMock} from "../mocks/DelegationMock.sol";
 import {AVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 import {RewardsCoordinatorMock} from "../mocks/RewardsCoordinatorMock.sol";
+import {PermissionControllerMock} from "../mocks/PermissionControllerMock.sol";
 
-import { RewardsCoordinator } from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
-import { IRewardsCoordinator } from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {RewardsCoordinator} from "eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+import {PermissionController} from
+    "eigenlayer-contracts/src/contracts/permissions/PermissionController.sol";
+import {AllocationManager} from "eigenlayer-contracts/src/contracts/core/AllocationManager.sol";
+import {IRewardsCoordinator} from
+    "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 import {BLSApkRegistryHarness} from "../harnesses/BLSApkRegistryHarness.sol";
 import {EmptyContract} from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
@@ -53,25 +64,22 @@ contract MockAVSDeployer is Test {
     ProxyAdmin public proxyAdmin;
     PauserRegistry public pauserRegistry;
 
-    ISlasher public slasher = ISlasher(address(uint160(uint256(keccak256("slasher")))));
-    Slasher public slasherImplementation;
-
     EmptyContract public emptyContract;
 
     RegistryCoordinatorHarness public registryCoordinatorImplementation;
     StakeRegistryHarness public stakeRegistryImplementation;
     IBLSApkRegistry public blsApkRegistryImplementation;
     IIndexRegistry public indexRegistryImplementation;
-    SocketRegistry public socketRegistryImplementation;
     ServiceManagerMock public serviceManagerImplementation;
+    SocketRegistry public socketRegistryImplementation;
 
     OperatorStateRetriever public operatorStateRetriever;
     RegistryCoordinatorHarness public registryCoordinator;
     StakeRegistryHarness public stakeRegistry;
     BLSApkRegistryHarness public blsApkRegistry;
     IIndexRegistry public indexRegistry;
-    ServiceManagerMock public serviceManager;
     SocketRegistry public socketRegistry;
+    ServiceManagerMock public serviceManager;
 
     StrategyManagerMock public strategyManagerMock;
     DelegationMock public delegationMock;
@@ -79,9 +87,13 @@ contract MockAVSDeployer is Test {
     AVSDirectory public avsDirectory;
     AVSDirectory public avsDirectoryImplementation;
     AVSDirectoryMock public avsDirectoryMock;
+    AllocationManagerMock public allocationManagerMock;
+    AllocationManager public allocationManager;
+    AllocationManager public allocationManagerImplementation;
     RewardsCoordinator public rewardsCoordinator;
     RewardsCoordinator public rewardsCoordinatorImplementation;
     RewardsCoordinatorMock public rewardsCoordinatorMock;
+    PermissionControllerMock public permissionControllerMock;
 
     /// @notice StakeRegistry, Constant used as a divisor in calculating weights.
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
@@ -101,19 +113,19 @@ contract MockAVSDeployer is Test {
     address defaultOperator = address(uint160(uint256(keccak256("defaultOperator"))));
     bytes32 defaultOperatorId;
     BN254.G1Point internal defaultPubKey = BN254.G1Point(
-        18_260_007_818_883_133_054_078_754_218_619_977_578_772_505_796_600_400_998_181_738_095_793_040_006_897,
-        3_432_351_341_799_135_763_167_709_827_653_955_074_218_841_517_684_851_694_584_291_831_827_675_065_899
+        18260007818883133054078754218619977578772505796600400998181738095793040006897,
+        3432351341799135763167709827653955074218841517684851694584291831827675065899
     );
     string defaultSocket = "69.69.69.69:420";
     uint96 defaultStake = 1 ether;
     uint8 defaultQuorumNumber = 0;
 
     uint32 defaultMaxOperatorCount = 10;
-    uint16 defaultKickBIPsOfOperatorStake = 15_000;
+    uint16 defaultKickBIPsOfOperatorStake = 15000;
     uint16 defaultKickBIPsOfTotalStake = 150;
     uint8 numQuorums = 192;
 
-    IRegistryCoordinator.OperatorSetParam[] operatorSetParams;
+    ISlashingRegistryCoordinatorTypes.OperatorSetParam[] operatorSetParams;
 
     uint8 maxQuorumsToRegisterFor = 4;
     uint256 maxOperatorsToRegister = 4;
@@ -136,39 +148,24 @@ contract MockAVSDeployer is Test {
         _deployMockEigenLayerAndAVS(numQuorums);
     }
 
-    function _deployMockEigenLayerAndAVS(uint8 numQuorumsToAdd) internal {
+    function _deployMockEigenLayerAndAVS(
+        uint8 numQuorumsToAdd
+    ) internal {
         emptyContract = new EmptyContract();
-
         defaultOperatorId = defaultPubKey.hashG1Point();
 
         cheats.startPrank(proxyAdminOwner);
         proxyAdmin = new ProxyAdmin();
-
         address[] memory pausers = new address[](1);
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
-
         delegationMock = new DelegationMock();
         avsDirectoryMock = new AVSDirectoryMock();
         eigenPodManagerMock = new EigenPodManagerMock(pauserRegistry);
-        strategyManagerMock = new StrategyManagerMock();
-        slasherImplementation = new Slasher(strategyManagerMock, delegationMock);
-        slasher = Slasher(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(slasherImplementation),
-                    address(proxyAdmin),
-                    abi.encodeWithSelector(
-                        Slasher.initialize.selector,
-                        msg.sender,
-                        pauserRegistry,
-                        0 /*initialPausedStatus*/
-                    )
-                )
-            )
-        );
-        avsDirectoryMock = new AVSDirectoryMock();
-        avsDirectoryImplementation = new AVSDirectory(delegationMock);
+        strategyManagerMock = new StrategyManagerMock(delegationMock);
+        allocationManagerMock = new AllocationManagerMock();
+        permissionControllerMock = new PermissionControllerMock();
+        avsDirectoryImplementation = new AVSDirectory(delegationMock, pauserRegistry); // TODO: config value
         avsDirectory = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
@@ -176,16 +173,14 @@ contract MockAVSDeployer is Test {
                     address(proxyAdmin),
                     abi.encodeWithSelector(
                         AVSDirectory.initialize.selector,
-                        msg.sender,
-                        pauserRegistry,
-                        0 /*initialPausedStatus*/
+                        msg.sender, // initialOwner
+                        0 // initialPausedStatus
                     )
                 )
             )
         );
         rewardsCoordinatorMock = new RewardsCoordinatorMock();
-
-        strategyManagerMock.setAddresses(delegationMock, eigenPodManagerMock, slasher);
+        strategyManagerMock.setDelegationManager(delegationMock);
         cheats.stopPrank();
 
         cheats.startPrank(registryCoordinatorOwner);
@@ -194,8 +189,27 @@ contract MockAVSDeployer is Test {
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
-
         stakeRegistry = StakeRegistryHarness(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
+        indexRegistry = IndexRegistry(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
+        blsApkRegistry = BLSApkRegistryHarness(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
+        serviceManager = ServiceManagerMock(
+            address(
+                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
+            )
+        );
+        allocationManager = AllocationManager(
             address(
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
@@ -206,32 +220,16 @@ contract MockAVSDeployer is Test {
                 new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
             )
         );
-
-        indexRegistry = IndexRegistry(
-            address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-            )
-        );
-
-        blsApkRegistry = BLSApkRegistryHarness(
-            address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-            )
-        );
-
-        serviceManager = ServiceManagerMock(
-            address(
-                new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")
-            )
-        );
-
         cheats.stopPrank();
 
         cheats.startPrank(proxyAdminOwner);
 
-        stakeRegistryImplementation =
-            new StakeRegistryHarness(IRegistryCoordinator(registryCoordinator), delegationMock);
-
+        stakeRegistryImplementation = new StakeRegistryHarness(
+            ISlashingRegistryCoordinator(registryCoordinator),
+            delegationMock,
+            avsDirectory,
+            allocationManagerMock
+        );
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(stakeRegistry))),
             address(stakeRegistryImplementation)
@@ -245,14 +243,12 @@ contract MockAVSDeployer is Test {
         );
 
         blsApkRegistryImplementation = new BLSApkRegistryHarness(registryCoordinator);
-
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(blsApkRegistry))),
             address(blsApkRegistryImplementation)
         );
 
         indexRegistryImplementation = new IndexRegistry(registryCoordinator);
-
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(indexRegistry))),
             address(indexRegistryImplementation)
@@ -262,17 +258,30 @@ contract MockAVSDeployer is Test {
             avsDirectoryMock,
             IRewardsCoordinator(address(rewardsCoordinatorMock)),
             registryCoordinator,
-            stakeRegistry
+            stakeRegistry,
+            permissionControllerMock,
+            allocationManagerMock
         );
-
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(serviceManager))),
             address(serviceManagerImplementation)
         );
 
+        allocationManagerImplementation = new AllocationManager(
+            delegationMock,
+            pauserRegistry,
+            permissionControllerMock,
+            uint32(7 days), // DEALLOCATION_DELAY
+            uint32(1 days) // ALLOCATION_CONFIGURATION_DELAY
+        );
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(allocationManager))),
+            address(allocationManagerImplementation)
+        );
+
         serviceManager.initialize({
             initialOwner: registryCoordinatorOwner,
-            rewardsInitiator: address(proxyAdminOwner)
+            rewardsInitiator: proxyAdminOwner
         });
 
         // set the public key for an operator, using harnessed function to bypass checks
@@ -285,24 +294,46 @@ contract MockAVSDeployer is Test {
         }
 
         // setup the dummy quorum strategies
-        IStakeRegistry.StrategyParams[][] memory quorumStrategiesConsideredAndMultipliers =
-            new IStakeRegistry.StrategyParams[][](numQuorumsToAdd);
+        IStakeRegistryTypes.StrategyParams[][] memory quorumStrategiesConsideredAndMultipliers =
+            new IStakeRegistryTypes.StrategyParams[][](numQuorumsToAdd);
         for (uint256 i = 0; i < quorumStrategiesConsideredAndMultipliers.length; i++) {
-            quorumStrategiesConsideredAndMultipliers[i] = new IStakeRegistry.StrategyParams[](1);
-            quorumStrategiesConsideredAndMultipliers[i][0] = IStakeRegistry.StrategyParams(
+            quorumStrategiesConsideredAndMultipliers[i] =
+                new IStakeRegistryTypes.StrategyParams[](1);
+            quorumStrategiesConsideredAndMultipliers[i][0] = IStakeRegistryTypes.StrategyParams(
                 IStrategy(address(uint160(i))), uint96(WEIGHTING_DIVISOR)
             );
         }
 
         registryCoordinatorImplementation = new RegistryCoordinatorHarness(
-            serviceManager, stakeRegistry, blsApkRegistry, indexRegistry, socketRegistry
+            serviceManager,
+            stakeRegistry,
+            blsApkRegistry,
+            indexRegistry,
+            socketRegistry,
+            allocationManagerMock,
+            pauserRegistry
         );
         {
+            proxyAdmin.upgradeAndCall(
+                TransparentUpgradeableProxy(payable(address(registryCoordinator))),
+                address(registryCoordinatorImplementation),
+                abi.encodeCall(
+                    SlashingRegistryCoordinator.initialize,
+                    (
+                        registryCoordinatorOwner, // _initialOwner
+                        churnApprover, // _churnApprover
+                        ejector, // _ejector
+                        0, // _initialPausedStatus
+                        address(serviceManager) // _accountIdentifier
+                    )
+                )
+            );
+
             delete operatorSetParams;
             for (uint256 i = 0; i < numQuorumsToAdd; i++) {
                 // hard code these for now
                 operatorSetParams.push(
-                    IRegistryCoordinator.OperatorSetParam({
+                    ISlashingRegistryCoordinatorTypes.OperatorSetParam({
                         maxOperatorCount: defaultMaxOperatorCount,
                         kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
                         kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
@@ -310,26 +341,48 @@ contract MockAVSDeployer is Test {
                 );
             }
 
-            proxyAdmin.upgradeAndCall(
-                TransparentUpgradeableProxy(payable(address(registryCoordinator))),
-                address(registryCoordinatorImplementation),
-                abi.encodeWithSelector(
-                    RegistryCoordinator.initialize.selector,
-                    registryCoordinatorOwner,
-                    churnApprover,
-                    ejector,
-                    pauserRegistry,
-                    0, /*initialPausedStatus*/
-                    operatorSetParams,
-                    minimumStakeForQuorum,
-                    quorumStrategiesConsideredAndMultipliers
-                )
-            );
+            cheats.stopPrank();
+
+            // add TOTAL_DELEGATED stake type quorums
+            for (uint256 i = 0; i < numQuorumsToAdd; i++) {
+                cheats.prank(registryCoordinator.owner());
+                registryCoordinator.createTotalDelegatedStakeQuorum(
+                    operatorSetParams[i],
+                    minimumStakeForQuorum[i],
+                    quorumStrategiesConsideredAndMultipliers[i]
+                );
+            }
         }
 
         operatorStateRetriever = new OperatorStateRetriever();
 
-        cheats.stopPrank();
+        registryCoordinator.setOperatorSetsEnabled(false);
+        registryCoordinator.setM2QuorumsDisabled(false);
+    }
+
+    function _labelContracts() internal {
+        vm.label(address(emptyContract), "EmptyContract");
+        vm.label(address(proxyAdmin), "ProxyAdmin");
+        vm.label(address(pauserRegistry), "PauserRegistry");
+        vm.label(address(delegationMock), "DelegationMock");
+        vm.label(address(avsDirectoryMock), "AVSDirectoryMock");
+        vm.label(address(eigenPodManagerMock), "EigenPodManagerMock");
+        vm.label(address(strategyManagerMock), "StrategyManagerMock");
+        vm.label(address(allocationManagerMock), "AllocationManagerMock");
+        vm.label(address(avsDirectoryImplementation), "AVSDirectoryImplementation");
+        vm.label(address(avsDirectory), "AVSDirectory");
+        vm.label(address(rewardsCoordinatorMock), "RewardsCoordinatorMock");
+        vm.label(address(registryCoordinator), "RegistryCoordinator");
+        vm.label(address(stakeRegistry), "StakeRegistry");
+        vm.label(address(indexRegistry), "IndexRegistry");
+        vm.label(address(blsApkRegistry), "BLSApkRegistry");
+        vm.label(address(serviceManager), "ServiceManager");
+        vm.label(address(allocationManager), "AllocationManager");
+        vm.label(address(stakeRegistryImplementation), "StakeRegistryImplementation");
+        vm.label(address(blsApkRegistryImplementation), "BLSApkRegistryImplementation");
+        vm.label(address(indexRegistryImplementation), "IndexRegistryImplementation");
+        vm.label(address(serviceManagerImplementation), "ServiceManagerImplementation");
+        vm.label(address(allocationManagerImplementation), "AllocationManagerImplementation");
     }
 
     /**
@@ -395,10 +448,9 @@ contract MockAVSDeployer is Test {
         );
     }
 
-    function _registerRandomOperators(uint256 pseudoRandomNumber)
-        internal
-        returns (OperatorMetadata[] memory, uint256[][] memory)
-    {
+    function _registerRandomOperators(
+        uint256 pseudoRandomNumber
+    ) internal returns (OperatorMetadata[] memory, uint256[][] memory) {
         OperatorMetadata[] memory operatorMetadatas = new OperatorMetadata[](maxOperatorsToRegister);
         for (uint256 i = 0; i < operatorMetadatas.length; i++) {
             // limit to 16 quorums so we don't run out of gas, make them all register for quorum 0 as well
@@ -481,7 +533,7 @@ contract MockAVSDeployer is Test {
     function _signOperatorChurnApproval(
         address registeringOperator,
         bytes32 registeringOperatorId,
-        IRegistryCoordinator.OperatorKickParam[] memory operatorKickParams,
+        ISlashingRegistryCoordinator.OperatorKickParam[] memory operatorKickParams,
         bytes32 salt,
         uint256 expiry
     ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory) {

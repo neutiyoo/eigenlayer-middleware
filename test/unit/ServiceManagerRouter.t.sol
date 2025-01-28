@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import {ServiceManagerRouter} from "../../src/ServiceManagerRouter.sol";
 import "../utils/MockAVSDeployer.sol";
@@ -19,7 +19,9 @@ contract ServiceManagerRouter_UnitTests is MockAVSDeployer {
             avsDirectory,
             rewardsCoordinatorImplementation,
             registryCoordinatorImplementation,
-            stakeRegistryImplementation
+            stakeRegistryImplementation,
+            permissionControllerMock,
+            allocationManagerMock
         );
 
         _registerOperatorWithCoordinator(defaultOperator, MAX_QUORUM_BITMAP, defaultPubKey);
@@ -48,17 +50,20 @@ contract ServiceManagerRouter_UnitTests is MockAVSDeployer {
     }
 
     function test_getOperatorRestakedStrategies_noStrats() public {
-        address[] memory strategies = router.getOperatorRestakedStrategies(address(dummyServiceManager), defaultOperator);
+        address[] memory strategies =
+            router.getOperatorRestakedStrategies(address(dummyServiceManager), defaultOperator);
         assertEq(strategies.length, 0);
     }
 
     function test_getOperatorRestakedStrategies_multipleStrats() public {
-        address[] memory strategies = router.getOperatorRestakedStrategies(address(serviceManager), defaultOperator);
+        address[] memory strategies =
+            router.getOperatorRestakedStrategies(address(serviceManager), defaultOperator);
         assertEq(strategies.length, 192);
     }
 
     function test_getOperatorRestakedStrategies_badImplementation() public {
-        address[] memory strategies = router.getOperatorRestakedStrategies(address(emptyContract), defaultOperator);
+        address[] memory strategies =
+            router.getOperatorRestakedStrategies(address(emptyContract), defaultOperator);
         assertEq(strategies.length, 1);
         assertEq(strategies[0], badReturn);
     }

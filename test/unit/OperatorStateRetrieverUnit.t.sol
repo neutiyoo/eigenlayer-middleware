@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "../utils/MockAVSDeployer.sol";
+import {IStakeRegistryErrors} from "../../src/interfaces/IStakeRegistry.sol";
+import {ISlashingRegistryCoordinatorTypes} from "../../src/interfaces/IRegistryCoordinator.sol";
 
 contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
     using BN254 for BN254.G1Point;
@@ -13,7 +15,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
     function test_getOperatorState_revert_neverRegistered() public {
         cheats.expectRevert(
-            "RegCoord.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operator at blockNumber"
+            "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId"
         );
         operatorStateRetriever.getOperatorState(
             registryCoordinator, defaultOperatorId, uint32(block.number)
@@ -26,7 +28,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
         // should revert because the operator was registered for the first time after the reference block number
         cheats.expectRevert(
-            "RegCoord.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operator at blockNumber"
+            "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId"
         );
         operatorStateRetriever.getOperatorState(
             registryCoordinator, defaultOperatorId, registrationBlockNumber - 1
@@ -80,20 +82,24 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
     function test_getOperatorState_revert_quorumNotCreatedAtReferenceBlockNumber() public {
         cheats.roll(registrationBlockNumber);
-        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator
-            .OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: defaultMaxOperatorCount,
             kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
             kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
         });
         uint96 minimumStake = 1;
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistry.StrategyParams({strategy: IStrategy(address(1000)), multiplier: 1e16});
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(1000)),
+            multiplier: 1e16
+        });
 
         cheats.prank(registryCoordinator.owner());
-        registryCoordinator.createQuorum(operatorSetParams, minimumStake, strategyParams);
+        registryCoordinator.createTotalDelegatedStakeQuorum(
+            operatorSetParams, minimumStake, strategyParams
+        );
 
         cheats.expectRevert(
             "IndexRegistry._operatorCountAtBlockNumber: quorum did not exist at given block number"
@@ -143,7 +149,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         nonSignerOperatorIds[0] = defaultOperatorId;
 
         cheats.expectRevert(
-            "RegCoord.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operator at blockNumber"
+            "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId"
         );
         operatorStateRetriever.getCheckSignaturesIndices(
             registryCoordinator,
@@ -164,7 +170,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
         // should revert because the operator was registered for the first time after the reference block number
         cheats.expectRevert(
-            "RegCoord.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operator at blockNumber"
+            "RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId"
         );
         operatorStateRetriever.getCheckSignaturesIndices(
             registryCoordinator,
@@ -186,9 +192,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         registryCoordinator.deregisterOperator(BitmapUtils.bitmapToBytesArray(1));
 
         // should revert because the operator was registered for the first time after the reference block number
-        cheats.expectRevert(
-            "OperatorStateRetriever.getCheckSignaturesIndices: operator must be registered at blocknumber"
-        );
+        cheats.expectRevert(OperatorStateRetriever.OperatorNotRegistered.selector);
         operatorStateRetriever.getCheckSignaturesIndices(
             registryCoordinator,
             uint32(block.number),
@@ -203,7 +207,7 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
 
         _registerOperatorWithCoordinator(defaultOperator, 1, defaultPubKey);
 
-        cheats.expectRevert("StakeRegistry.quorumExists: quorum does not exist");
+        cheats.expectRevert(IStakeRegistryErrors.QuorumDoesNotExist.selector);
         operatorStateRetriever.getCheckSignaturesIndices(
             registryCoordinator,
             uint32(block.number),
@@ -222,24 +226,26 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         bytes32[] memory nonSignerOperatorIds = new bytes32[](1);
         nonSignerOperatorIds[0] = defaultOperatorId;
 
-        IRegistryCoordinator.OperatorSetParam memory operatorSetParams = IRegistryCoordinator
-            .OperatorSetParam({
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam memory operatorSetParams =
+        ISlashingRegistryCoordinatorTypes.OperatorSetParam({
             maxOperatorCount: defaultMaxOperatorCount,
             kickBIPsOfOperatorStake: defaultKickBIPsOfOperatorStake,
             kickBIPsOfTotalStake: defaultKickBIPsOfTotalStake
         });
         uint96 minimumStake = 1;
-        IStakeRegistry.StrategyParams[] memory strategyParams =
-            new IStakeRegistry.StrategyParams[](1);
-        strategyParams[0] =
-            IStakeRegistry.StrategyParams({strategy: IStrategy(address(1000)), multiplier: 1e16});
+        IStakeRegistryTypes.StrategyParams[] memory strategyParams =
+            new IStakeRegistryTypes.StrategyParams[](1);
+        strategyParams[0] = IStakeRegistryTypes.StrategyParams({
+            strategy: IStrategy(address(1000)),
+            multiplier: 1e16
+        });
 
         cheats.prank(registryCoordinator.owner());
-        registryCoordinator.createQuorum(operatorSetParams, minimumStake, strategyParams);
-
-        cheats.expectRevert(
-            "StakeRegistry.getTotalStakeIndicesAtBlockNumber: quorum has no stake history at blockNumber"
+        registryCoordinator.createTotalDelegatedStakeQuorum(
+            operatorSetParams, minimumStake, strategyParams
         );
+
+        cheats.expectRevert(IStakeRegistryErrors.EmptyStakeHistory.selector);
         operatorStateRetriever.getCheckSignaturesIndices(
             registryCoordinator,
             registrationBlockNumber + 5,
@@ -252,6 +258,10 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         uint256 quorumBitmapOne = 1;
         uint256 quorumBitmapTwo = 2;
         uint256 quorumBitmapThree = 3;
+
+        assertFalse(
+            registryCoordinator.operatorSetsEnabled(), "operatorSetsEnabled should be false"
+        );
 
         cheats.roll(registrationBlockNumber);
         _registerOperatorWithCoordinator(defaultOperator, quorumBitmapOne, defaultPubKey);
@@ -359,7 +369,9 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         assertEq(checkSignaturesIndices.nonSignerStakeIndices[1][0], 0);
     }
 
-    function testGetOperatorState_Valid(uint256 pseudoRandomNumber) public {
+    function testGetOperatorState_Valid(
+        uint256 pseudoRandomNumber
+    ) public {
         // register random operators and get the expected indices within the quorums and the metadata for the operators
         (
             OperatorMetadata[] memory operatorMetadatas,
@@ -428,7 +440,9 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         );
     }
 
-    function testCheckSignaturesIndices_NoNonSigners_Valid(uint256 pseudoRandomNumber) public {
+    function testCheckSignaturesIndices_NoNonSigners_Valid(
+        uint256 pseudoRandomNumber
+    ) public {
         (
             OperatorMetadata[] memory operatorMetadatas,
             uint256[][] memory expectedOperatorOverallIndices
@@ -493,7 +507,9 @@ contract OperatorStateRetrieverUnitTests is MockAVSDeployer {
         }
     }
 
-    function testCheckSignaturesIndices_FewNonSigners_Valid(uint256 pseudoRandomNumber) public {
+    function testCheckSignaturesIndices_FewNonSigners_Valid(
+        uint256 pseudoRandomNumber
+    ) public {
         (
             OperatorMetadata[] memory operatorMetadatas,
             uint256[][] memory expectedOperatorOverallIndices
