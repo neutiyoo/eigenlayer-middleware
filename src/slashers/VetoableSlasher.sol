@@ -29,7 +29,7 @@ contract VetoableSlasher is SlasherBase {
     }
 
     function queueSlashingRequest(
-        IAllocationManager.SlashingParams memory params
+        IAllocationManager.SlashingParams calldata params
     ) external virtual onlySlasher {
         _queueSlashingRequest(params);
     }
@@ -62,7 +62,7 @@ contract VetoableSlasher is SlasherBase {
     }
 
     function _queueSlashingRequest(
-        IAllocationManager.SlashingParams memory params
+        IAllocationManager.SlashingParams calldata params
     ) internal virtual {
         uint256 requestId = nextRequestId++;
         slashingRequests[requestId] = SlashingRequest({
