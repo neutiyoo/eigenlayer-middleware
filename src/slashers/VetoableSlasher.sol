@@ -20,8 +20,7 @@ contract VetoableSlasher is SlasherBase {
 
     constructor(
         IAllocationManager _allocationManager,
-        ISlashingRegistryCoordinator _slashingRegistryCoordinator,
-        address _slasher
+        ISlashingRegistryCoordinator _slashingRegistryCoordinator
     ) SlasherBase(_allocationManager, _slashingRegistryCoordinator) {}
 
     function initialize(address _vetoCommittee, address _slasher) external virtual initializer {
